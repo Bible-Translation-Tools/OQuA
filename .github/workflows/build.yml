@@ -31,11 +31,6 @@ jobs:
           echo "ORG_GRADLE_PROJECT_gradlewCommandVersionProp=$(cat VERSION)+$GITHUB_RUN_NUMBER" >> $GITHUB_ENV && \
           echo "UPDATE_PATH=$CI_REF_NAME_SLUG" >> $GITHUB_ENV
         if: ${{ steps.tagged.outcome == 'skipped' }}
-      - name: Decrypt secret file
-        shell: bash
-        run: ./.github/scripts/decrypt_secret.sh
-        env:
-          LARGE_SECRET_PASSPHRASE: ${{ secrets.LARGE_SECRET_PASSPHRASE }}
       - name: install4j build
         shell: bash
         run: |
@@ -50,6 +45,7 @@ jobs:
           -e ORG_GRADLE_PROJECT_sentryDsn \
           -e GITHUB_TOKEN \
           -e SONAR_TOKEN \
+          -e ORG_GRADLE_PROJECT_devbuild=true \
           wycliffeassociates/install4j-docker:9.0.2 \
           ./gradlew build codeCoverageReport sonarqube :jvm:workbookapp:install4jdeploy "-Dorg.gradle.jvmargs=-Xmx2048m -XX:MaxMetaspaceSize=512m"
         env:
