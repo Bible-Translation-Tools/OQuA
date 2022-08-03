@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <install4j version="9.0.5" transformSequenceNumber="9">
   <directoryPresets config="." />
-  <application name="Orature" applicationId="8057-9807-3529-9982" mediaDir=".exec" mediaFilePattern="${compiler:sys.shortName}-${compiler:sys.platform}-${compiler:sys.version}" shortName="orature" version="0.1" allPathsRelative="true" convertDotsToUnderscores="false" macVolumeId="82fd10b9f6e2b1b5" javaMinVersion="11" javaMaxVersion="11">
+  <application name="OQuA" applicationId="8057-9807-3529-9982" mediaDir=".exec" mediaFilePattern="${compiler:sys.shortName}-${compiler:sys.platform}-${compiler:sys.version}" shortName="OQuA" version="0.1" allPathsRelative="true" convertDotsToUnderscores="false" macVolumeId="82fd10b9f6e2b1b5" javaMinVersion="11" javaMaxVersion="11">
     <codeSigning windowsEnabled="true" windowsPkcs12File="~/signing.p12" />
   </application>
   <files preserveSymlinks="false">
@@ -13,11 +13,11 @@
     </entries>
   </files>
   <launchers>
-    <launcher name="orature" id="59">
-      <executable name="orature" iconSet="true" iconFile="./orature_icon.ico" executableDir="." executableMode="gui" />
-      <java mainClass="org.wycliffeassociates.otter.jvm.workbookapp.MainKt">
+    <launcher name="OQuA" id="59">
+      <executable name="OQuA" iconSet="true" iconFile="./orature_icon.ico" executableDir="." executableMode="gui" />
+      <java mainClass="org.wycliffeassociates.otter.jvm.workbookapp.oqua.OQuAKt">
         <classPath>
-          <archive location="workbookapp.jar" />
+          <archive location="oqua.jar" />
         </classPath>
       </java>
       <macStaticAssociationActions mode="selected" />
@@ -27,7 +27,7 @@
       </iconImageFiles>
     </launcher>
   </launchers>
-  <installerGui autoUpdateDescriptorUrl="http://nightlybuilds.s3-website-us-east-1.amazonaws.com/Bible-Translation-Tools/Orature/${compiler:env.UPDATE_PATH}/updates.xml" useAutoUpdateBaseUrl="true" autoUpdateBaseUrl="http://nightlybuilds.s3-website-us-east-1.amazonaws.com/Bible-Translation-Tools/Orature/${compiler:env.UPDATE_PATH}/">
+  <installerGui autoUpdateDescriptorUrl="http://nightlybuilds.s3-website-us-east-1.amazonaws.com/Bible-Translation-Tools/OQuA/${compiler:env.UPDATE_PATH}/updates.xml" useAutoUpdateBaseUrl="true" autoUpdateBaseUrl="http://nightlybuilds.s3-website-us-east-1.amazonaws.com/Bible-Translation-Tools/OQuA/${compiler:env.UPDATE_PATH}/">
     <applications>
       <application id="installer" beanClass="com.install4j.runtime.beans.applications.InstallerApplication">
         <serializedBean>
@@ -193,10 +193,10 @@ By using this software, you agree to the Oracle Binary Code License Agreement fo
             <actions>
               <action id="323" beanClass="com.install4j.runtime.beans.actions.desktop.CreateStartMenuEntryAction" actionElevationType="elevated" rollbackBarrierExitCode="0">
                 <serializedBean>
-                  <property name="entryName" type="string">Orature</property>
+                  <property name="entryName" type="string">OQuA</property>
                   <property name="file">
                     <object class="java.io.File">
-                      <string>orature</string>
+                      <string>OQuA</string>
                     </object>
                   </property>
                   <property name="unixIconFile">
@@ -211,7 +211,7 @@ By using this software, you agree to the Oracle Binary Code License Agreement fo
                 <serializedBean>
                   <property name="file">
                     <object class="java.io.File">
-                      <string>orature</string>
+                      <string>OQuA</string>
                     </object>
                   </property>
                   <property name="name" type="string">${compiler:sys.fullName}</property>
@@ -238,13 +238,13 @@ By using this software, you agree to the Oracle Binary Code License Agreement fo
                 <serializedBean>
                   <property name="destinationFile">
                     <object class="java.io.File">
-                      <string>/home/${installer:sys.userName}/Desktop/orature.desktop</string>
+                      <string>/home/${installer:sys.userName}/Desktop/OQuA.desktop</string>
                     </object>
                   </property>
                   <property name="files" type="array" class="java.io.File" length="1">
                     <element index="0">
                       <object class="java.io.File">
-                        <string>/opt/orature/orature.desktop</string>
+                        <string>/opt/OQuA/OQuA.desktop</string>
                       </object>
                     </element>
                   </property>
@@ -320,7 +320,7 @@ return console.askYesNo(message, true);
                   <property name="files" type="array" class="java.io.File" length="1">
                     <element index="0">
                       <object class="java.io.File">
-                        <string>${installer:sys.appdataDir}${installer:sys.fileSeparator}Orature</string>
+                        <string>${installer:sys.appdataDir}${installer:sys.fileSeparator}OQuA</string>
                       </object>
                     </element>
                   </property>
@@ -875,16 +875,16 @@ file.getParent() != null || (file.getName().endsWith(".app") &amp;&amp; director
       </excludedBeans>
       <jreBundle jreBundleSource="preCreated" includedJre="windows-amd64-11.0.3.tar.gz" manualJreEntry="true" />
     </windows>
-    <linuxDeb name="Linux Deb Archive" id="158" description="Orature is a modular suite of Oral Translation libraries and distributable software." maintainerEmail="wycliffeassociates.org">
+    <linuxDeb name="Linux Deb Archive" id="158" description="OQuA is an app." maintainerEmail="wycliffeassociates.org">
       <jreBundle jreBundleSource="preCreated" includedJre="linux-amd64-11.0.4.tar.gz" manualJreEntry="true" />
       <postInstallScript>for desktop in /home/*/Desktop; do
     USER=$(stat -c "%U" "$desktop")
-    sudo -u $USER cp /opt/${compiler:sys.shortName}/orature.desktop "$desktop"
+    sudo -u $USER cp /opt/${compiler:sys.shortName}/OQuA.desktop "$desktop"
 done</postInstallScript>
-      <postUninstallScript>for i in $(ls -d -1 /home/**); do rm -rf $i/.config/Orature; done
+      <postUninstallScript>for i in $(ls -d -1 /home/**); do rm -rf $i/.config/OQuA; done
 
 for desktop in /home/*/Desktop; do
-    rm "$desktop/orature.desktop" || true
+    rm "$desktop/OQuA.desktop" || true
 done</postUninstallScript>
     </linuxDeb>
     <macosArchive name="macOS Single Bundle Archive" id="415" launcherId="59">
