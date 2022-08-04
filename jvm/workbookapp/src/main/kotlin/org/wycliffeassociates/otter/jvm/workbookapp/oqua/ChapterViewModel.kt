@@ -2,11 +2,11 @@ package org.wycliffeassociates.otter.jvm.workbookapp.oqua
 
 import javafx.beans.property.SimpleBooleanProperty
 import javafx.beans.property.SimpleObjectProperty
+import org.wycliffeassociates.otter.common.audio.AudioCue
 import org.wycliffeassociates.otter.common.audio.AudioFile
 import org.wycliffeassociates.otter.common.data.workbook.Take
 import org.wycliffeassociates.otter.common.data.workbook.Workbook
 import org.wycliffeassociates.otter.common.device.IAudioPlayer
-import org.wycliffeassociates.otter.jvm.controls.model.VerseMarkerModel
 import org.wycliffeassociates.otter.jvm.workbookapp.di.IDependencyGraphProvider
 import org.wycliffeassociates.otter.jvm.workbookapp.ui.viewmodel.SettingsViewModel
 import org.wycliffeassociates.otter.jvm.workbookapp.ui.viewmodel.WorkbookDataStore
@@ -24,7 +24,7 @@ class ChapterViewModel : ViewModel() {
     private lateinit var take: Take
     private var numberOfVerses = 0
     private var numberOfFrames = 0
-    private lateinit var verseMarkerModel: VerseMarkerModel
+    private lateinit var verseMarkers: List<AudioCue>
     val hasAllMarkers = SimpleBooleanProperty()
 
     val questions = observableListOf<Question>()
@@ -71,13 +71,9 @@ class ChapterViewModel : ViewModel() {
 
     private fun loadVerseMarkers() {
         numberOfVerses = wbDataStore.chapter.chunks.count().blockingGet().toInt()
-        verseMarkerModel = VerseMarkerModel(AudioFile(take.file), numberOfVerses)
+        verseMarkers = AudioFile(take.file).metadata.getCues()
 
-        hasAllMarkers.set(
-            verseMarkerModel.markers.none {
-                it.frame == 0 && it.label != "1"
-            }
-        )
+        hasAllMarkers.set(verseMarkers.size == numberOfVerses)
     }
 
     private fun loadQuestions() {
@@ -164,6 +160,6 @@ class ChapterViewModel : ViewModel() {
     }
 
     private fun getVerseFrame(verse: Int): Int {
-        return verseMarkerModel.markers[verse - 1].frame
+        return verseMarkers[verse - 1].location
     }
 }
