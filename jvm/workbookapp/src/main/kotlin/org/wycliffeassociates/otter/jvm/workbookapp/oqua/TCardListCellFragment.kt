@@ -40,16 +40,18 @@ class TCardListCellFragment: ListCellFragment<TranslationCard>() {
             style { padding = box(20.0.px) }
             hiddenWhen(hasQuestionsProperty)
             managedWhen(visibleProperty())
-            text("You do not have the questions downloaded for this language")
-            hbox {
-                text("You can find them at ")
-                text(questionsURLProperty) {
-                    style {
-                        fontWeight = FontWeight.BOLD
-                    }
+            text("You do not have the questions downloaded for this language. Please follow the instructions below.") {
+                style {
+                    fontWeight = FontWeight.BOLD
                 }
             }
-            text("Download the zip file and import it using the import button of Orature")
+            text("Go to the link below and download the questions")
+            hyperlink(questionsURLProperty) {
+                action {
+                    hostServices.showDocument(questionsURLProperty.value)
+                }
+            }
+            text("Then open Orature and import the zip file you just downloaded.")
         }
 
         listview<Workbook> {

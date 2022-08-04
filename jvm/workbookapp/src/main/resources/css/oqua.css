@@ -30,6 +30,11 @@
     -fx-border-color: darkcyan;
 }
 
+.hyperlink {
+    -fx-font-weight: bold;
+    -fx-text-fill: blue;
+}
+
 .list-cell {
     -fx-background-color: white;
 }
