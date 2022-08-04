@@ -45,7 +45,8 @@ class TQListCellFragment: ListCellFragment<Question>() {
         button(verseProperty) {
             action {
                 itemProperty.value?.let {
-                    viewModel.jumpToVerse(it.start)
+                    viewModel.playVerseRange(it.start, it.end)
+                    //viewModel.jumpToVerse(it.start)
                 }
             }
         }

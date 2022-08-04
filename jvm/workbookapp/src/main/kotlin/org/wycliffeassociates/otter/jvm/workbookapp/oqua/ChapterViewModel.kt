@@ -1,7 +1,9 @@
 package org.wycliffeassociates.otter.jvm.workbookapp.oqua
 
+import javafx.beans.property.SimpleBooleanProperty
 import javafx.beans.property.SimpleObjectProperty
 import org.wycliffeassociates.otter.common.audio.AudioFile
+import org.wycliffeassociates.otter.common.data.workbook.Take
 import org.wycliffeassociates.otter.common.data.workbook.Workbook
 import org.wycliffeassociates.otter.common.device.IAudioPlayer
 import org.wycliffeassociates.otter.jvm.controls.model.VerseMarkerModel
@@ -19,10 +21,14 @@ class ChapterViewModel : ViewModel() {
 
     val settingsViewModel: SettingsViewModel by inject()
 
-    lateinit var verseMarkerModel: VerseMarkerModel
+    private lateinit var take: Take
+    private var numberOfVerses = 0
+    private var numberOfFrames = 0
+    private lateinit var verseMarkerModel: VerseMarkerModel
+    val hasAllMarkers = SimpleBooleanProperty()
 
     val questions = observableListOf<Question>()
-    val audioPlayerProperty = SimpleObjectProperty<IAudioPlayer>(null)
+    val audioPlayerProperty = SimpleObjectProperty<IAudioPlayer>()
 
     lateinit var workbook: Workbook
     var chapterNumber = 0
@@ -35,31 +41,43 @@ class ChapterViewModel : ViewModel() {
         workbook = wbDataStore.workbook
         chapterNumber = wbDataStore.chapter.sort
 
-        loadChapterAudio()
+        loadChapterTake()
+        loadAudio()
+        loadVerseMarkers()
         loadQuestions()
     }
 
     fun undock() {
-        closeChapterAudio()
+        closeAudio()
         saveDraftReview()
     }
 
-    private fun loadChapterAudio() {
-        wbDataStore
+    private fun loadChapterTake() {
+        take = wbDataStore
             .chapter
             .audio
             .selected
             .value
             ?.value
-            ?.let { take ->
-                val audioPlayer = (app as IDependencyGraphProvider).dependencyGraph.injectPlayer()
-                audioPlayer.load(take.file)
-                audioPlayerProperty.set(audioPlayer)
+            ?: throw NullPointerException("ChapterViewModel: Could not find selected chapter take")
+    }
 
-                val numberOfChunks = wbDataStore.chapter.chunks.count().blockingGet().toInt()
+    private fun loadAudio() {
+        val audioPlayer = (app as IDependencyGraphProvider).dependencyGraph.injectPlayer()
+        audioPlayer.load(take.file)
+        audioPlayerProperty.set(audioPlayer)
+        numberOfFrames = audioPlayerProperty.value.getDurationInFrames()
+    }
 
-                verseMarkerModel = VerseMarkerModel(AudioFile(take.file), numberOfChunks)
+    private fun loadVerseMarkers() {
+        numberOfVerses = wbDataStore.chapter.chunks.count().blockingGet().toInt()
+        verseMarkerModel = VerseMarkerModel(AudioFile(take.file), numberOfVerses)
+
+        hasAllMarkers.set(
+            verseMarkerModel.markers.none {
+                it.frame == 0 && it.label != "1"
             }
+        )
     }
 
     private fun loadQuestions() {
@@ -109,7 +127,7 @@ class ChapterViewModel : ViewModel() {
         }
     }
 
-    private fun closeChapterAudio() {
+    private fun closeAudio() {
         audioPlayerProperty.value.close()
     }
 
@@ -117,11 +135,31 @@ class ChapterViewModel : ViewModel() {
         draftReviewRepo.writeDraftReviewFile(workbook, chapterNumber, questions)
     }
 
-    fun jumpToVerse(verse: Int) {
-        if (verse > 0 && verse <= verseMarkerModel.markers.size) {
-            val frame = getVerseFrame(verse)
-            audioPlayerProperty.value.seek(frame)
-            audioPlayerProperty.value.play()
+    fun playVerseRange(start: Int, end: Int) {
+        if (hasAllMarkers.value) {
+            if ((start in 1..numberOfVerses) &&
+                (end in start..numberOfVerses)
+            ) {
+
+                val startFrame = getVerseFrame(start)
+                val endFrame = getVerseEndFrame(end)
+
+                audioPlayerProperty.value.loadSection(take.file, startFrame, endFrame)
+                audioPlayerProperty.value.seek(0)
+                audioPlayerProperty.value.play()
+            } else {
+                throw IndexOutOfBoundsException(
+                    "ChapterViewModel: Verse range [$start - $end] does not exist in $numberOfVerses verses"
+                )
+            }
+        }
+    }
+
+    private fun getVerseEndFrame(verse: Int): Int {
+        return if (verse == numberOfVerses) {
+            numberOfFrames
+        } else {
+            getVerseFrame(verse + 1)
         }
     }
 

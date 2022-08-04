@@ -24,7 +24,7 @@ class ChapterView : View() {
         simpleaudioplayer {
             hgrow = Priority.ALWAYS
             playerProperty.bind(viewModel.audioPlayerProperty)
-            visibleWhen(playerProperty.isNotNull)
+            hiddenWhen(viewModel.hasAllMarkers)
             managedProperty().bind(visibleProperty())
         }
         listview(viewModel.questions) {
