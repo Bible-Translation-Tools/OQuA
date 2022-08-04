@@ -20,7 +20,7 @@ class TCardListCellFragment: ListCellFragment<TranslationCard>() {
     )
     private val questionsURLProperty = Bindings.createStringBinding(
         { itemProperty.value?.translation?.source?.slug?.let { slug ->
-                "https://content.bibletranslationtools.org/WA-Catalog/${slug}_tq"
+            "https://content.bibletranslationtools.org/WA-Catalog/${slug}_tq/archive/master.zip"
         }},
         itemProperty
     )
@@ -45,7 +45,7 @@ class TCardListCellFragment: ListCellFragment<TranslationCard>() {
                     fontWeight = FontWeight.BOLD
                 }
             }
-            text("Go to the link below and download the questions")
+            text("Use the link below to download the questions")
             hyperlink(questionsURLProperty) {
                 action {
                     hostServices.showDocument(questionsURLProperty.value)
