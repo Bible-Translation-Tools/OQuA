@@ -22,8 +22,8 @@
       </java>
       <macStaticAssociationActions mode="selected" />
       <iconImageFiles>
-        <file path="./orature_icon_48x48.png" />
-        <file path="./orature_icon_128x128.png" />
+        <file path="./oqua_icon_48x48.png" />
+        <file path="./oqua_icon_128x128.png" />
       </iconImageFiles>
     </launcher>
   </launchers>
@@ -201,7 +201,7 @@ By using this software, you agree to the Oracle Binary Code License Agreement fo
                   </property>
                   <property name="unixIconFile">
                     <object class="com.install4j.api.beans.ExternalFile">
-                      <string>./orature_icon_128x128.png</string>
+                      <string>./oqua_icon_128x128.png</string>
                     </object>
                   </property>
                 </serializedBean>
@@ -217,7 +217,7 @@ By using this software, you agree to the Oracle Binary Code License Agreement fo
                   <property name="name" type="string">${compiler:sys.fullName}</property>
                   <property name="unixIconFile">
                     <object class="com.install4j.api.beans.ExternalFile">
-                      <string>./orature_icon_128x128.png</string>
+                      <string>./oqua_icon_128x128.png</string>
                     </object>
                   </property>
                   <property name="winIconFile">
