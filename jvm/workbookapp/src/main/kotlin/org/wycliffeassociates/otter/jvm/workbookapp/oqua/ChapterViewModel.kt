@@ -70,7 +70,13 @@ class ChapterViewModel : ViewModel() {
     }
 
     private fun loadVerseMarkers() {
-        numberOfVerses = wbDataStore.chapter.chunks.count().blockingGet().toInt()
+        numberOfVerses = wbDataStore
+            .getSourceChapter()
+            .blockingGet()
+            .chunks
+            .count()
+            .blockingGet()
+            .toInt()
         verseMarkers = AudioFile(take.file).metadata.getCues()
 
         hasAllMarkers.set(verseMarkers.size == numberOfVerses)
