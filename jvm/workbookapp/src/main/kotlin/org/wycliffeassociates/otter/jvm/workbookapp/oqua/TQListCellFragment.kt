@@ -3,7 +3,9 @@ package org.wycliffeassociates.otter.jvm.workbookapp.oqua
 import javafx.beans.binding.Bindings
 import javafx.scene.control.ToggleButton
 import javafx.scene.control.ToggleGroup
+import javafx.scene.text.Text
 import tornadofx.*
+import java.lang.Double.min
 
 class TQListCellFragment: ListCellFragment<Question>() {
     private val viewModel: ChapterViewModel by inject()
@@ -27,6 +29,8 @@ class TQListCellFragment: ListCellFragment<Question>() {
         itemProperty
     )
 
+    val textElements = mutableListOf<Text>()
+
     lateinit var correctButton: ToggleButton
     lateinit var incorrectButton: ToggleButton
     lateinit var invalidButton: ToggleButton
@@ -46,14 +50,15 @@ class TQListCellFragment: ListCellFragment<Question>() {
             action {
                 itemProperty.value?.let {
                     viewModel.playVerseRange(it.start, it.end)
-                    //viewModel.jumpToVerse(it.start)
                 }
             }
         }
-        text(questionProperty) {
+
+        textElements.add(text(questionProperty) {
             addClass("oqua-question-text")
-        }
-        text(answerProperty)
+        })
+        textElements.add(text(answerProperty))
+
         hbox {
             correctButton = togglebutton("Correct", toggleGroup) {
                 action {
@@ -80,6 +85,7 @@ class TQListCellFragment: ListCellFragment<Question>() {
                 }
             }
         }
+
         textfield {
             visibleWhen(invalidButton.selectedProperty())
             managedWhen(visibleProperty())
@@ -90,6 +96,29 @@ class TQListCellFragment: ListCellFragment<Question>() {
             textProperty().onChange {
                 item?.result?.explanation = it ?: ""
             }
+        }
+
+
+        textElements.forEach { element ->
+            element.wrappingWidthProperty().bind(
+                Bindings.createDoubleBinding(
+                    {
+                        /**
+                         * For every text element in this cell,
+                         * recalculate the wrapping width whenever
+                         * the window resizes or the item changes.
+                         */
+                        val listViewPadding = 15.0
+                        val paddingForScrollBar = 40.0
+                        (min(
+                            width,
+                            ((cell?.listView?.width ?: 0.0) - listViewPadding)
+                        ) - paddingForScrollBar)
+                    },
+                    widthProperty(),
+                    cellProperty
+                )
+            )
         }
     }
 }

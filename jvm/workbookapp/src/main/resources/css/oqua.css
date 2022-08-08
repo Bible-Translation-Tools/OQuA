@@ -37,6 +37,7 @@
 
 .list-cell {
     -fx-background-color: white;
+    -fx-pref-width: 100%;
 }
 
 .progress-marker {
