@@ -32,14 +32,8 @@ class HomeViewModel: ViewModel() {
             .getProjects()
             .toObservable()
             .flatMap { Observable.fromIterable(it) }
-            .toList()
-            .map { workbooks ->
-                workbooks.sortedBy { workbook ->
-                    workbook.source.sort
-                }
-            }
-            .subscribe { workbooks ->
-                addWorkbooksToTCards(workbooks)
+            .subscribe { workbook ->
+                addWorkbookToTCards(workbook)
             }
             .addTo(disposables)
     }
@@ -48,19 +42,24 @@ class HomeViewModel: ViewModel() {
         tCards.setAll()
     }
 
-    private fun addWorkbooksToTCards(workbooks: List<Workbook>) {
-        workbooks.forEach { workbook ->
-            workbookHasAudio(workbook)
-                .observeOnFx()
-                .subscribe { hasAudio ->
-                    if (hasAudio) {
-                        val tCard = TranslationCard.mapFromWorkbook(workbook)
-                        val existingSource = tCards.find { card -> card == tCard }
-                        ((existingSource?.merge(tCard)) ?: tCards.add(tCard))
+    private fun addWorkbookToTCards(workbook: Workbook) {
+        workbookHasAudio(workbook)
+            .observeOnFx()
+            .subscribe { hasAudio ->
+                if (hasAudio) {
+                    val tCard = TranslationCard.mapFromWorkbook(workbook)
+                    val existingSource = tCards.find { card -> card == tCard }
+                    ((existingSource?.merge(tCard)) ?: tCards.add(tCard))
+                }
+                tCards.sortByDescending { tCard ->
+                    if (tCard.hasQuestions) {
+                        tCard.projects.size
+                    } else {
+                        0
                     }
                 }
-                .addTo(disposables)
-        }
+            }
+            .addTo(disposables)
     }
 
     private fun workbookHasAudio(workbook: Workbook): Single<Boolean> {

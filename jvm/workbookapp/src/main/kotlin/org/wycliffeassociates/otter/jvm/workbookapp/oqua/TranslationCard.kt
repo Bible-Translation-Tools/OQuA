@@ -15,6 +15,13 @@ class TranslationCard (
     fun merge(tCard: TranslationCard) {
         if (translation == tCard.translation) {
             projects.addAll(tCard.projects)
+            sortProjects()
+        }
+    }
+
+    private fun sortProjects() {
+        projects.sortBy { workbook ->
+            workbook.source.sort
         }
     }
 

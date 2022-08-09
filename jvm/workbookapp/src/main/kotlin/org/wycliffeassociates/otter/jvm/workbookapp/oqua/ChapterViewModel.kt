@@ -1,5 +1,6 @@
 package org.wycliffeassociates.otter.jvm.workbookapp.oqua
 
+import com.github.thomasnield.rxkotlinfx.observeOnFx
 import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
@@ -128,6 +129,7 @@ class ChapterViewModel : ViewModel() {
                 Observable.fromIterable(questionsFromChunk)
             }
             .toList()
+            .observeOnFx()
             .map { questions ->
                 questionsDedup(questions).sortedBy {
                     it.end
