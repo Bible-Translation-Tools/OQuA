@@ -1,5 +1,9 @@
 package org.wycliffeassociates.otter.jvm.workbookapp.oqua
 
+import io.reactivex.Observable
+import io.reactivex.Single
+import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.rxkotlin.addTo
 import javafx.beans.property.SimpleBooleanProperty
 import javafx.beans.property.SimpleObjectProperty
 import org.wycliffeassociates.otter.common.audio.AudioCue
@@ -33,6 +37,8 @@ class ChapterViewModel : ViewModel() {
     lateinit var workbook: Workbook
     var chapterNumber = 0
 
+    private val disposables = CompositeDisposable()
+
     init {
         (app as IDependencyGraphProvider).dependencyGraph.inject(this)
     }
@@ -50,6 +56,7 @@ class ChapterViewModel : ViewModel() {
     fun undock() {
         closeAudio()
         saveDraftReview()
+        disposables.clear()
     }
 
     private fun loadChapterTake() {
@@ -70,52 +77,62 @@ class ChapterViewModel : ViewModel() {
     }
 
     private fun loadVerseMarkers() {
-        numberOfVerses = wbDataStore
+        wbDataStore
             .getSourceChapter()
-            .blockingGet()
-            .chunks
-            .count()
-            .blockingGet()
-            .toInt()
-        verseMarkers = AudioFile(take.file).metadata.getCues()
+            .toSingle()
+            .flatMap { it.chunks.count() }
+            .map { it.toInt() }
+            .subscribe { numberOfSourceChunks ->
+                numberOfVerses = numberOfSourceChunks
+                verseMarkers = AudioFile(take.file).metadata.getCues()
 
-        hasAllMarkers.set(verseMarkers.size == numberOfVerses)
+                hasAllMarkers.set(verseMarkers.size == numberOfVerses)
+            }
+            .addTo(disposables)
     }
 
     private fun loadQuestions() {
-        val newQuestions = loadQuestionsResource()
-        try {
-            draftReviewRepo
-                .readDraftReviewFile(workbook, chapterNumber)
-                .draftReviews
-                .let { draftReviews ->
-                    loadDraftReviewIntoQuestions(newQuestions, draftReviews)
+        loadQuestionsResource()
+            .subscribe { newQuestions ->
+                try {
+                    draftReviewRepo
+                        .readDraftReviewFile(workbook, chapterNumber)
+                        .draftReviews
+                        .let { draftReviews ->
+                            loadDraftReviewIntoQuestions(newQuestions, draftReviews)
+                        }
+                } catch (_: FileNotFoundException) {
+                    /**
+                     * Nothing needs to be done with the error
+                     * Because it could just be a new chapter
+                     * that hasn't been graded yet.
+                     */
                 }
-        } catch (_: FileNotFoundException) {
-            /**
-             * Nothing needs to be done with the error
-             * Because it could just be a new chapter
-             * that hasn't been graded yet.
-             */
-        }
 
-        questions.setAll(newQuestions)
+                questions.setAll(newQuestions)
+            }
+            .addTo(disposables)
     }
 
-    private fun loadQuestionsResource(): List<Question> {
+    private fun loadQuestionsResource(): Single<List<Question>> {
         return wbDataStore
             .getSourceChapter()
-            .blockingGet()
-            ?.let { chapter ->
-                questionsDedup(chapter
-                    .chunks
-                    .toList()
-                    .blockingGet()
-                    .flatMap { chunk ->
-                        Question.getQuestionsFromChunk(chunk)
-                    }
-                ).toList()
-            } ?: listOf()
+            .toObservable()
+            .flatMap { chapter ->
+                chapter.chunks
+            }
+            .flatMap { chunk ->
+                Question.getQuestionsFromChunk(chunk).toObservable()
+            }
+            .flatMap { questionsFromChunk ->
+                Observable.fromIterable(questionsFromChunk)
+            }
+            .toList()
+            .map { questions ->
+                questionsDedup(questions).sortedBy {
+                    it.end
+                }
+            }
     }
 
     private fun loadDraftReviewIntoQuestions(questions: List<Question>, draftReviews: List<QuestionDraftReview>) {

@@ -1,5 +1,7 @@
 package org.wycliffeassociates.otter.jvm.workbookapp.oqua
 
+import io.reactivex.Observable
+import io.reactivex.Single
 import org.wycliffeassociates.otter.common.data.workbook.Chunk
 import org.wycliffeassociates.otter.common.data.workbook.Resource
 import java.util.*
@@ -45,17 +47,20 @@ data class Question(
     override fun hashCode(): Int = Objects.hash(start, end, question, answer)
 
     companion object {
-        fun getQuestionsFromChunk(chunk: Chunk): List<Question> {
+        fun getQuestionsFromChunk(chunk: Chunk): Single<MutableList<Question>> {
             val resourceGroup = chunk.resources.find {
                 it.metadata.identifier == "tq"
             }
-            return resourceGroup
-                ?.resources
-                ?.map { resource ->
-                    Question(chunk.start, chunk.end, resource)
-                }
-                ?.blockingIterable()
-                ?.toList() ?: listOf()
+
+            return (
+                    resourceGroup
+                        ?.resources
+                        ?.map { resource ->
+                            Question(chunk.start, chunk.end, resource)
+                        }
+                        ?.toList()
+                        ?: Observable.fromIterable(listOf<Question>()).toList()
+                    )
         }
     }
 }
