@@ -3,6 +3,7 @@ package org.wycliffeassociates.otter.jvm.workbookapp.oqua
 import javafx.beans.binding.Bindings
 import javafx.scene.control.ToggleButton
 import javafx.scene.control.ToggleGroup
+import javafx.scene.layout.Priority
 import javafx.scene.text.Text
 import tornadofx.*
 import java.lang.Double.min
@@ -43,7 +44,7 @@ class TQListCellFragment: ListCellFragment<Question>() {
         }
     }
 
-    override val root = vbox {
+    override val root = vbox(5) {
         addClass("oqua-tq-card")
 
         button(verseProperty) {
@@ -59,7 +60,7 @@ class TQListCellFragment: ListCellFragment<Question>() {
         })
         textElements.add(text(answerProperty))
 
-        hbox {
+        hbox(5) {
             correctButton = togglebutton("Correct", toggleGroup) {
                 action {
                     item.result.result = ResultValue.CORRECT
@@ -84,17 +85,19 @@ class TQListCellFragment: ListCellFragment<Question>() {
                     ResultValue.UNANSWERED -> toggleGroup.selectToggle(null)
                 }
             }
-        }
 
-        textfield {
-            visibleWhen(invalidButton.selectedProperty())
-            managedWhen(visibleProperty())
+            textfield {
+                hgrow = Priority.ALWAYS
 
-            itemProperty.onChange {
-                text = it?.result?.explanation
-            }
-            textProperty().onChange {
-                item?.result?.explanation = it ?: ""
+                visibleWhen(invalidButton.selectedProperty())
+                managedWhen(visibleProperty())
+
+                itemProperty.onChange {
+                    text = it?.result?.explanation
+                }
+                textProperty().onChange {
+                    item?.result?.explanation = it ?: ""
+                }
             }
         }
 

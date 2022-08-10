@@ -4,6 +4,8 @@ import io.reactivex.Observable
 import io.reactivex.Single
 import org.wycliffeassociates.otter.common.data.workbook.Chunk
 import org.wycliffeassociates.otter.common.data.workbook.Resource
+import java.lang.Math.max
+import java.lang.Math.min
 import java.util.*
 
 fun questionsDedup(questions: List<Question>): List<Question> {
@@ -11,7 +13,8 @@ fun questionsDedup(questions: List<Question>): List<Question> {
     questions.forEach {question ->
         val match = filteredQuestions.find { it == question }
         if (match != null) {
-            match.end = question.end
+            match.start = min(match.start, question.start)
+            match.end = max(match.end, question.end)
         } else {
             filteredQuestions.add(question)
         }
@@ -20,7 +23,7 @@ fun questionsDedup(questions: List<Question>): List<Question> {
 }
 
 data class Question(
-    val start: Int,
+    var start: Int,
     var end: Int,
     val resource: Resource?
 ) {
