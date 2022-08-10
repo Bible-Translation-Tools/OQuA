@@ -36,6 +36,10 @@
     -fx-font-weight: bold
 }
 
+.label {
+    -fx-text-fill: black;
+}
+
 .oqua-tq-card {
     -fx-margin: 7px;
     -fx-padding: 5px;
