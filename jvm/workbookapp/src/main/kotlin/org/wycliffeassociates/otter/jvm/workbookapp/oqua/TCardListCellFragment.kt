@@ -1,7 +1,6 @@
 package org.wycliffeassociates.otter.jvm.workbookapp.oqua
 
 import javafx.beans.binding.Bindings
-import javafx.scene.text.FontWeight
 import org.wycliffeassociates.otter.common.data.workbook.Workbook
 import tornadofx.*
 
@@ -37,13 +36,12 @@ class TCardListCellFragment: ListCellFragment<TranslationCard>() {
         }
 
         vbox {
-            style { padding = box(20.0.px) }
+            addClass("oqua-tcard")
+
             hiddenWhen(hasQuestionsProperty)
             managedWhen(visibleProperty())
             text("You do not have the questions downloaded for this language. Please follow the instructions below.") {
-                style {
-                    fontWeight = FontWeight.BOLD
-                }
+                addClass("oqua-missing-tq-header")
             }
             text("Use the link below to download the questions")
             hyperlink(questionsURLProperty) {

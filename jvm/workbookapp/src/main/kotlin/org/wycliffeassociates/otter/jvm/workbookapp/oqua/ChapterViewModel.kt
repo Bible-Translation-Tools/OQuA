@@ -1,7 +1,6 @@
 package org.wycliffeassociates.otter.jvm.workbookapp.oqua
 
 import com.github.thomasnield.rxkotlinfx.observeOnFx
-import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.rxkotlin.addTo
@@ -118,15 +117,11 @@ class ChapterViewModel : ViewModel() {
     private fun loadQuestionsResource(): Single<List<Question>> {
         return wbDataStore
             .getSourceChapter()
-            .toObservable()
-            .flatMap { chapter ->
+            .flatMapObservable { chapter ->
                 chapter.chunks
             }
             .flatMap { chunk ->
-                Question.getQuestionsFromChunk(chunk).toObservable()
-            }
-            .flatMap { questionsFromChunk ->
-                Observable.fromIterable(questionsFromChunk)
+                Question.getQuestionsFromChunk(chunk).flattenAsObservable { it }
             }
             .toList()
             .observeOnFx()
@@ -150,6 +145,7 @@ class ChapterViewModel : ViewModel() {
 
     private fun closeAudio() {
         audioPlayerProperty.value.close()
+        audioPlayerProperty.set(null)
     }
 
     private fun saveDraftReview() {

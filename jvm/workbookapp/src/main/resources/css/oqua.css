@@ -17,6 +17,21 @@
     -fx-border-color: blue;
 }
 
+.oqua-nav-bar {
+    -fx-padding: 5px;
+}
+
+.oqua-tcard {
+    -fx-padding: 20px;
+}
+
+.oqua-missing-tq-header {
+    -fx-font-weight: bold;
+}
+
+.oqua-missing-tq-header {
+    -fx-font-weight: bold
+}
 .oqua-question-text {
     -fx-font-weight: bold
 }

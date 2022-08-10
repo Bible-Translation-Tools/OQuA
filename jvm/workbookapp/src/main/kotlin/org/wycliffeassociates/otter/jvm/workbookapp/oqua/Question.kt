@@ -50,7 +50,7 @@ data class Question(
     override fun hashCode(): Int = Objects.hash(start, end, question, answer)
 
     companion object {
-        fun getQuestionsFromChunk(chunk: Chunk): Single<MutableList<Question>> {
+        fun getQuestionsFromChunk(chunk: Chunk): Single<List<Question>> {
             val resourceGroup = chunk.resources.find {
                 it.metadata.identifier == "tq"
             }
