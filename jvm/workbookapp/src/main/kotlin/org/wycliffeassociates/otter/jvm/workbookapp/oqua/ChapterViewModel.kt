@@ -26,8 +26,8 @@ class ChapterViewModel : ViewModel() {
     val settingsViewModel: SettingsViewModel by inject()
 
     private lateinit var take: Take
-    private var numberOfVerses = 0
-    private var numberOfFrames = 0
+    private var totalVerses = 0
+    private var totalFrames = 0
     private lateinit var verseMarkers: List<AudioCue>
     val hasAllMarkers = SimpleBooleanProperty()
 
@@ -73,7 +73,7 @@ class ChapterViewModel : ViewModel() {
         val audioPlayer = (app as IDependencyGraphProvider).dependencyGraph.injectPlayer()
         audioPlayer.load(take.file)
         audioPlayerProperty.set(audioPlayer)
-        numberOfFrames = audioPlayerProperty.value.getDurationInFrames()
+        totalFrames = audioPlayerProperty.value.getDurationInFrames()
     }
 
     private fun loadVerseMarkers() {
@@ -83,10 +83,10 @@ class ChapterViewModel : ViewModel() {
             .flatMap { it.chunks.count() }
             .map { it.toInt() }
             .subscribe { numberOfSourceChunks ->
-                numberOfVerses = numberOfSourceChunks
+                totalVerses = numberOfSourceChunks
                 verseMarkers = AudioFile(take.file).metadata.getCues()
 
-                hasAllMarkers.set(verseMarkers.size == numberOfVerses)
+                hasAllMarkers.set(verseMarkers.size == totalVerses)
             }
             .addTo(disposables)
     }
@@ -121,7 +121,7 @@ class ChapterViewModel : ViewModel() {
                 chapter.chunks
             }
             .flatMap { chunk ->
-                Question.getQuestionsFromChunk(chunk).flattenAsObservable { it }
+                Question.getQuestionsFromChunk(chunk)
             }
             .toList()
             .observeOnFx()
@@ -154,8 +154,8 @@ class ChapterViewModel : ViewModel() {
 
     fun playVerseRange(start: Int, end: Int) {
         if (hasAllMarkers.value) {
-            if ((start in 1..numberOfVerses) &&
-                (end in start..numberOfVerses)
+            if ((start in 1..totalVerses) &&
+                (end in start..totalVerses)
             ) {
 
                 val startFrame = getVerseFrame(start)
@@ -166,15 +166,15 @@ class ChapterViewModel : ViewModel() {
                 audioPlayerProperty.value.play()
             } else {
                 throw IndexOutOfBoundsException(
-                    "ChapterViewModel: Verse range [$start - $end] does not exist in $numberOfVerses verses"
+                    "ChapterViewModel: Verse range [$start - $end] does not exist in $totalVerses verses"
                 )
             }
         }
     }
 
     private fun getVerseEndFrame(verse: Int): Int {
-        return if (verse == numberOfVerses) {
-            numberOfFrames
+        return if (verse == totalVerses) {
+            totalFrames
         } else {
             getVerseFrame(verse + 1)
         }

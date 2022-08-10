@@ -43,6 +43,7 @@
     -fx-background-color: #eeeeff;
     -fx-border-radius: 5px;
     -fx-border-color: darkcyan;
+    -fx-pref-width: 100px;
 }
 
 .hyperlink {
@@ -52,7 +53,6 @@
 
 .list-cell {
     -fx-background-color: white;
-    -fx-pref-width: 100%;
 }
 
 .progress-marker {

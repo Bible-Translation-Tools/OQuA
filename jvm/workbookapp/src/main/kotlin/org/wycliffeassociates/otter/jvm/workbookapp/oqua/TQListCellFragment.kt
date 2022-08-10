@@ -4,9 +4,7 @@ import javafx.beans.binding.Bindings
 import javafx.scene.control.ToggleButton
 import javafx.scene.control.ToggleGroup
 import javafx.scene.layout.Priority
-import javafx.scene.text.Text
 import tornadofx.*
-import java.lang.Double.min
 
 class TQListCellFragment: ListCellFragment<Question>() {
     private val viewModel: ChapterViewModel by inject()
@@ -29,8 +27,6 @@ class TQListCellFragment: ListCellFragment<Question>() {
         },
         itemProperty
     )
-
-    val textElements = mutableListOf<Text>()
 
     lateinit var correctButton: ToggleButton
     lateinit var incorrectButton: ToggleButton
@@ -55,10 +51,13 @@ class TQListCellFragment: ListCellFragment<Question>() {
             }
         }
 
-        textElements.add(text(questionProperty) {
+        label(questionProperty) {
             addClass("oqua-question-text")
-        })
-        textElements.add(text(answerProperty))
+            isWrapText = true
+        }
+        label(answerProperty) {
+            isWrapText = true
+        }
 
         hbox(5) {
             correctButton = togglebutton("Correct", toggleGroup) {
@@ -99,29 +98,6 @@ class TQListCellFragment: ListCellFragment<Question>() {
                     item?.result?.explanation = it ?: ""
                 }
             }
-        }
-
-
-        textElements.forEach { element ->
-            element.wrappingWidthProperty().bind(
-                Bindings.createDoubleBinding(
-                    {
-                        /**
-                         * For every text element in this cell,
-                         * recalculate the wrapping width whenever
-                         * the window resizes or the item changes.
-                         */
-                        val listViewPadding = 15.0
-                        val paddingForScrollBar = 40.0
-                        (min(
-                            width,
-                            ((cell?.listView?.width ?: 0.0) - listViewPadding)
-                        ) - paddingForScrollBar)
-                    },
-                    widthProperty(),
-                    cellProperty
-                )
-            )
         }
     }
 }
