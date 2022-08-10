@@ -12,8 +12,17 @@ class TranslationCard (
     val hasQuestions: Boolean
 ) {
 
-    fun sortProjects() {
-        projects.sortBy { workbook -> workbook.source.sort }
+    fun merge(tCard: TranslationCard) {
+        if (translation == tCard.translation) {
+            projects.addAll(tCard.projects)
+            sortProjects()
+        }
+    }
+
+    private fun sortProjects() {
+        projects.sortBy { workbook ->
+            workbook.source.sort
+        }
     }
 
     override fun equals(other: Any?): Boolean =

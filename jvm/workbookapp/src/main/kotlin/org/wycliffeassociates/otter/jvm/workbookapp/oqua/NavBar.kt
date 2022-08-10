@@ -6,7 +6,8 @@ class NavBar : View() {
     private val viewModel: NavBarViewModel by inject()
 
     override val root = hbox(5) {
-        style { padding = box(5.px) }
+        addClass("oqua-nav-bar")
+
         button("OQuA") {
             action {
                 workspace.dock(find<HomeView>())

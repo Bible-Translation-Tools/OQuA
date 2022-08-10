@@ -1,7 +1,10 @@
 package org.wycliffeassociates.otter.jvm.workbookapp.oqua
 
+import io.reactivex.Observable
 import org.wycliffeassociates.otter.common.data.workbook.Chunk
 import org.wycliffeassociates.otter.common.data.workbook.Resource
+import java.lang.Math.max
+import java.lang.Math.min
 import java.util.*
 
 fun questionsDedup(questions: List<Question>): List<Question> {
@@ -9,7 +12,8 @@ fun questionsDedup(questions: List<Question>): List<Question> {
     questions.forEach {question ->
         val match = filteredQuestions.find { it == question }
         if (match != null) {
-            match.end = question.end
+            match.start = min(match.start, question.start)
+            match.end = max(match.end, question.end)
         } else {
             filteredQuestions.add(question)
         }
@@ -18,7 +22,7 @@ fun questionsDedup(questions: List<Question>): List<Question> {
 }
 
 data class Question(
-    val start: Int,
+    var start: Int,
     var end: Int,
     val resource: Resource?
 ) {
@@ -45,17 +49,19 @@ data class Question(
     override fun hashCode(): Int = Objects.hash(start, end, question, answer)
 
     companion object {
-        fun getQuestionsFromChunk(chunk: Chunk): List<Question> {
+        fun getQuestionsFromChunk(chunk: Chunk): Observable<Question> {
             val resourceGroup = chunk.resources.find {
                 it.metadata.identifier == "tq"
             }
-            return resourceGroup
-                ?.resources
-                ?.map { resource ->
-                    Question(chunk.start, chunk.end, resource)
-                }
-                ?.blockingIterable()
-                ?.toList() ?: listOf()
+
+            return (
+                    resourceGroup
+                        ?.resources
+                        ?.map { resource ->
+                            Question(chunk.start, chunk.end, resource)
+                        }
+                        ?: Observable.empty()
+                    )
         }
     }
 }

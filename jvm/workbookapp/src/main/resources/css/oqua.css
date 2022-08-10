@@ -17,8 +17,27 @@
     -fx-border-color: blue;
 }
 
+.oqua-nav-bar {
+    -fx-padding: 5px;
+}
+
+.oqua-tcard {
+    -fx-padding: 20px;
+}
+
+.oqua-missing-tq-header {
+    -fx-font-weight: bold;
+}
+
+.oqua-missing-tq-header {
+    -fx-font-weight: bold
+}
 .oqua-question-text {
     -fx-font-weight: bold
+}
+
+.label {
+    -fx-text-fill: black;
 }
 
 .oqua-tq-card {
@@ -28,6 +47,12 @@
     -fx-background-color: #eeeeff;
     -fx-border-radius: 5px;
     -fx-border-color: darkcyan;
+    -fx-pref-width: 100px;
+}
+
+.hyperlink {
+    -fx-font-weight: bold;
+    -fx-text-fill: blue;
 }
 
 .list-cell {

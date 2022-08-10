@@ -3,6 +3,7 @@ package org.wycliffeassociates.otter.jvm.workbookapp.oqua
 import javafx.beans.binding.Bindings
 import javafx.scene.control.ToggleButton
 import javafx.scene.control.ToggleGroup
+import javafx.scene.layout.Priority
 import tornadofx.*
 
 class TQListCellFragment: ListCellFragment<Question>() {
@@ -39,21 +40,26 @@ class TQListCellFragment: ListCellFragment<Question>() {
         }
     }
 
-    override val root = vbox {
+    override val root = vbox(5) {
         addClass("oqua-tq-card")
 
         button(verseProperty) {
             action {
                 itemProperty.value?.let {
-                    viewModel.jumpToVerse(it.start)
+                    viewModel.playVerseRange(it.start, it.end)
                 }
             }
         }
-        text(questionProperty) {
+
+        label(questionProperty) {
             addClass("oqua-question-text")
+            isWrapText = true
         }
-        text(answerProperty)
-        hbox {
+        label(answerProperty) {
+            isWrapText = true
+        }
+
+        hbox(5) {
             correctButton = togglebutton("Correct", toggleGroup) {
                 action {
                     item.result.result = ResultValue.CORRECT
@@ -78,16 +84,19 @@ class TQListCellFragment: ListCellFragment<Question>() {
                     ResultValue.UNANSWERED -> toggleGroup.selectToggle(null)
                 }
             }
-        }
-        textfield {
-            visibleWhen(invalidButton.selectedProperty())
-            managedWhen(visibleProperty())
 
-            itemProperty.onChange {
-                text = it?.result?.explanation
-            }
-            textProperty().onChange {
-                item?.result?.explanation = it ?: ""
+            textfield {
+                hgrow = Priority.ALWAYS
+
+                visibleWhen(invalidButton.selectedProperty())
+                managedWhen(visibleProperty())
+
+                itemProperty.onChange {
+                    text = it?.result?.explanation
+                }
+                textProperty().onChange {
+                    item?.result?.explanation = it ?: ""
+                }
             }
         }
     }

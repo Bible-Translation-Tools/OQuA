@@ -1,5 +1,8 @@
 package org.wycliffeassociates.otter.jvm.workbookapp.oqua
 
+import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.functions.Consumer
+import io.reactivex.rxkotlin.addTo
 import org.wycliffeassociates.otter.common.data.workbook.Chapter
 import org.wycliffeassociates.otter.common.data.workbook.Workbook
 import org.wycliffeassociates.otter.jvm.workbookapp.ui.viewmodel.WorkbookDataStore
@@ -10,17 +13,34 @@ class ProjectViewModel: ViewModel() {
 
     val chapters = observableListOf<Chapter>()
 
+    private val disposables = CompositeDisposable()
+
     fun dock() {
-        chapters.setAll(getChapters(wbDataStore.workbook).asObservable())
+        getChapters(wbDataStore.workbook)
         wbDataStore.activeChapterProperty.set(null)
     }
 
-    private fun getChapters(workbook: Workbook): List<Chapter> {
-        return workbook
+    fun undock() {
+        clearChapters()
+        disposables.clear()
+    }
+
+    private fun getChapters(workbook: Workbook) {
+        workbook
             .target
             .chapters
-            .toList()
-            .blockingGet()
             .filter { it.hasAudio() }
+            .toList()
+            .map { chapters ->
+                chapters.sortedBy { it.sort }
+            }
+            .subscribe(Consumer {
+                chapters.setAll(it)
+            })
+            .addTo(disposables)
+    }
+
+    private fun clearChapters() {
+        chapters.setAll()
     }
 }

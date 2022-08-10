@@ -1,10 +1,16 @@
 package org.wycliffeassociates.otter.jvm.workbookapp.oqua
 
+import com.github.thomasnield.rxkotlinfx.observeOnFx
+import io.reactivex.Single
+import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.rxkotlin.addTo
+import javafx.beans.property.SimpleBooleanProperty
 import javafx.beans.property.SimpleObjectProperty
+import org.wycliffeassociates.otter.common.audio.AudioCue
 import org.wycliffeassociates.otter.common.audio.AudioFile
+import org.wycliffeassociates.otter.common.data.workbook.Take
 import org.wycliffeassociates.otter.common.data.workbook.Workbook
 import org.wycliffeassociates.otter.common.device.IAudioPlayer
-import org.wycliffeassociates.otter.jvm.controls.model.VerseMarkerModel
 import org.wycliffeassociates.otter.jvm.workbookapp.di.IDependencyGraphProvider
 import org.wycliffeassociates.otter.jvm.workbookapp.ui.viewmodel.SettingsViewModel
 import org.wycliffeassociates.otter.jvm.workbookapp.ui.viewmodel.WorkbookDataStore
@@ -19,13 +25,19 @@ class ChapterViewModel : ViewModel() {
 
     val settingsViewModel: SettingsViewModel by inject()
 
-    lateinit var verseMarkerModel: VerseMarkerModel
+    private lateinit var take: Take
+    private var totalVerses = 0
+    private var totalFrames = 0
+    private lateinit var verseMarkers: List<AudioCue>
+    val hasAllMarkers = SimpleBooleanProperty()
 
     val questions = observableListOf<Question>()
-    val audioPlayerProperty = SimpleObjectProperty<IAudioPlayer>(null)
+    val audioPlayerProperty = SimpleObjectProperty<IAudioPlayer>()
 
     lateinit var workbook: Workbook
     var chapterNumber = 0
+
+    private val disposables = CompositeDisposable()
 
     init {
         (app as IDependencyGraphProvider).dependencyGraph.inject(this)
@@ -35,67 +47,89 @@ class ChapterViewModel : ViewModel() {
         workbook = wbDataStore.workbook
         chapterNumber = wbDataStore.chapter.sort
 
-        loadChapterAudio()
+        loadChapterTake()
+        loadAudio()
+        loadVerseMarkers()
         loadQuestions()
     }
 
     fun undock() {
-        closeChapterAudio()
+        closeAudio()
         saveDraftReview()
+        disposables.clear()
     }
 
-    private fun loadChapterAudio() {
-        wbDataStore
+    private fun loadChapterTake() {
+        take = wbDataStore
             .chapter
             .audio
             .selected
             .value
             ?.value
-            ?.let { take ->
-                val audioPlayer = (app as IDependencyGraphProvider).dependencyGraph.injectPlayer()
-                audioPlayer.load(take.file)
-                audioPlayerProperty.set(audioPlayer)
+            ?: throw NullPointerException("ChapterViewModel: Could not find selected chapter take")
+    }
 
-                val numberOfChunks = wbDataStore.chapter.chunks.count().blockingGet().toInt()
+    private fun loadAudio() {
+        val audioPlayer = (app as IDependencyGraphProvider).dependencyGraph.injectPlayer()
+        audioPlayer.load(take.file)
+        audioPlayerProperty.set(audioPlayer)
+        totalFrames = audioPlayerProperty.value.getDurationInFrames()
+    }
 
-                verseMarkerModel = VerseMarkerModel(AudioFile(take.file), numberOfChunks)
+    private fun loadVerseMarkers() {
+        wbDataStore
+            .getSourceChapter()
+            .toSingle()
+            .flatMap { it.chunks.count() }
+            .map { it.toInt() }
+            .subscribe { numberOfSourceChunks ->
+                totalVerses = numberOfSourceChunks
+                verseMarkers = AudioFile(take.file).metadata.getCues()
+
+                hasAllMarkers.set(verseMarkers.size == totalVerses)
             }
+            .addTo(disposables)
     }
 
     private fun loadQuestions() {
-        val newQuestions = loadQuestionsResource()
-        try {
-            draftReviewRepo
-                .readDraftReviewFile(workbook, chapterNumber)
-                .draftReviews
-                .let { draftReviews ->
-                    loadDraftReviewIntoQuestions(newQuestions, draftReviews)
+        loadQuestionsResource()
+            .subscribe { newQuestions ->
+                try {
+                    draftReviewRepo
+                        .readDraftReviewFile(workbook, chapterNumber)
+                        .draftReviews
+                        .let { draftReviews ->
+                            loadDraftReviewIntoQuestions(newQuestions, draftReviews)
+                        }
+                } catch (_: FileNotFoundException) {
+                    /**
+                     * Nothing needs to be done with the error
+                     * Because it could just be a new chapter
+                     * that hasn't been graded yet.
+                     */
                 }
-        } catch (_: FileNotFoundException) {
-            /**
-             * Nothing needs to be done with the error
-             * Because it could just be a new chapter
-             * that hasn't been graded yet.
-             */
-        }
 
-        questions.setAll(newQuestions)
+                questions.setAll(newQuestions)
+            }
+            .addTo(disposables)
     }
 
-    private fun loadQuestionsResource(): List<Question> {
+    private fun loadQuestionsResource(): Single<List<Question>> {
         return wbDataStore
             .getSourceChapter()
-            .blockingGet()
-            ?.let { chapter ->
-                questionsDedup(chapter
-                    .chunks
-                    .toList()
-                    .blockingGet()
-                    .flatMap { chunk ->
-                        Question.getQuestionsFromChunk(chunk)
-                    }
-                ).toList()
-            } ?: listOf()
+            .flatMapObservable { chapter ->
+                chapter.chunks
+            }
+            .flatMap { chunk ->
+                Question.getQuestionsFromChunk(chunk)
+            }
+            .toList()
+            .observeOnFx()
+            .map { questions ->
+                questionsDedup(questions).sortedBy {
+                    it.end
+                }
+            }
     }
 
     private fun loadDraftReviewIntoQuestions(questions: List<Question>, draftReviews: List<QuestionDraftReview>) {
@@ -109,23 +143,44 @@ class ChapterViewModel : ViewModel() {
         }
     }
 
-    private fun closeChapterAudio() {
+    private fun closeAudio() {
         audioPlayerProperty.value.close()
+        audioPlayerProperty.set(null)
     }
 
     private fun saveDraftReview() {
         draftReviewRepo.writeDraftReviewFile(workbook, chapterNumber, questions)
     }
 
-    fun jumpToVerse(verse: Int) {
-        if (verse > 0 && verse <= verseMarkerModel.markers.size) {
-            val frame = getVerseFrame(verse)
-            audioPlayerProperty.value.seek(frame)
-            audioPlayerProperty.value.play()
+    fun playVerseRange(start: Int, end: Int) {
+        if (hasAllMarkers.value) {
+            if ((start in 1..totalVerses) &&
+                (end in start..totalVerses)
+            ) {
+
+                val startFrame = getVerseFrame(start)
+                val endFrame = getVerseEndFrame(end)
+
+                audioPlayerProperty.value.loadSection(take.file, startFrame, endFrame)
+                audioPlayerProperty.value.seek(0)
+                audioPlayerProperty.value.play()
+            } else {
+                throw IndexOutOfBoundsException(
+                    "ChapterViewModel: Verse range [$start - $end] does not exist in $totalVerses verses"
+                )
+            }
+        }
+    }
+
+    private fun getVerseEndFrame(verse: Int): Int {
+        return if (verse == totalVerses) {
+            totalFrames
+        } else {
+            getVerseFrame(verse + 1)
         }
     }
 
     private fun getVerseFrame(verse: Int): Int {
-        return verseMarkerModel.markers[verse - 1].frame
+        return verseMarkers[verse - 1].location
     }
 }

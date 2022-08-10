@@ -2,6 +2,9 @@ package org.wycliffeassociates.otter.jvm.workbookapp.oqua
 
 import com.github.thomasnield.rxkotlinfx.observeOnFx
 import io.reactivex.Observable
+import io.reactivex.Single
+import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.rxkotlin.addTo
 import org.wycliffeassociates.otter.common.data.workbook.Workbook
 import org.wycliffeassociates.otter.jvm.workbookapp.ui.viewmodel.WorkbookDataStore
 import tornadofx.*
@@ -12,6 +15,8 @@ class HomeViewModel: ViewModel() {
 
     val tCards = observableListOf<TranslationCard>()
 
+    private val disposables = CompositeDisposable()
+
     fun dock() {
         getTranslations()
         wbDataStore.activeWorkbookProperty.set(null)
@@ -19,38 +24,50 @@ class HomeViewModel: ViewModel() {
 
     fun undock() {
         clearTCards()
+        disposables.clear()
     }
 
     private fun getTranslations() {
         workbookRepo
             .getProjects()
             .toObservable()
-            .flatMap {
-                Observable.fromIterable(it.filter{ workbook ->
-                    workbookHasAudio(workbook)
-                })
+            .flatMap { Observable.fromIterable(it) }
+            .subscribe { workbook ->
+                addWorkbookToTCards(workbook)
             }
-            .map { workbook -> TranslationCard.mapFromWorkbook(workbook) }
-            .observeOnFx()
-            .subscribe { tCard ->
-                val existingSource = tCards.find { card -> card == tCard }
-                (existingSource?.projects?.addAll(tCard.projects)) ?: tCards.add(tCard)
-
-                tCards.forEach { card -> card.sortProjects() }
-                tCards.sortByDescending { card -> card.projects.size }
-            }
+            .addTo(disposables)
     }
 
     private fun clearTCards() {
         tCards.setAll()
     }
 
-    private fun workbookHasAudio(workbook: Workbook): Boolean {
+    private fun addWorkbookToTCards(workbook: Workbook) {
+        workbookHasAudio(workbook)
+            .observeOnFx()
+            .subscribe { hasAudio ->
+                if (hasAudio) {
+                    val tCard = TranslationCard.mapFromWorkbook(workbook)
+                    val existingSource = tCards.find { card -> card == tCard }
+                    ((existingSource?.merge(tCard)) ?: tCards.add(tCard))
+                }
+                tCards.sortByDescending { tCard ->
+                    if (tCard.hasQuestions) {
+                        tCard.projects.size
+                    } else {
+                        0
+                    }
+                }
+            }
+            .addTo(disposables)
+    }
+
+    private fun workbookHasAudio(workbook: Workbook): Single<Boolean> {
         return workbook
             .target
             .chapters
-            .toList()
-            .blockingGet()
-            .any { it.hasAudio() }
+            .any { chapter ->
+                chapter.hasAudio()
+            }
     }
 }

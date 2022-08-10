@@ -22,5 +22,10 @@ class OQuAApp : App(OQuAWorkspace::class), IDependencyGraphProvider {
         stage.isMaximized = true
         stage.minWidth = 300.0
         stage.minHeight = 350.0
+
+        stage.scene.window.setOnCloseRequest {
+            /** Dock home view to undock any other views */
+            workspace.dock(find<HomeView>())
+        }
     }
 }

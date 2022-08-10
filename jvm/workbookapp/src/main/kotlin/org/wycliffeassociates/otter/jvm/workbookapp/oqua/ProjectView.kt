@@ -10,6 +10,10 @@ class ProjectView : View() {
         viewModel.dock()
     }
 
+    override fun onUndock() {
+        viewModel.undock()
+    }
+
     override val root = listview(viewModel.chapters) {
         vgrow = Priority.ALWAYS
         hgrow = Priority.ALWAYS

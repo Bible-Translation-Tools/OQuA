@@ -1,7 +1,6 @@
 package org.wycliffeassociates.otter.jvm.workbookapp.oqua
 
 import javafx.beans.binding.Bindings
-import javafx.scene.text.FontWeight
 import org.wycliffeassociates.otter.common.data.workbook.Workbook
 import tornadofx.*
 
@@ -20,7 +19,7 @@ class TCardListCellFragment: ListCellFragment<TranslationCard>() {
     )
     private val questionsURLProperty = Bindings.createStringBinding(
         { itemProperty.value?.translation?.source?.slug?.let { slug ->
-                "https://content.bibletranslationtools.org/WA-Catalog/${slug}_tq"
+            "https://content.bibletranslationtools.org/WA-Catalog/${slug}_tq/archive/master.zip"
         }},
         itemProperty
     )
@@ -37,19 +36,20 @@ class TCardListCellFragment: ListCellFragment<TranslationCard>() {
         }
 
         vbox {
-            style { padding = box(20.0.px) }
+            addClass("oqua-tcard")
+
             hiddenWhen(hasQuestionsProperty)
             managedWhen(visibleProperty())
-            text("You do not have the questions downloaded for this language")
-            hbox {
-                text("You can find them at ")
-                text(questionsURLProperty) {
-                    style {
-                        fontWeight = FontWeight.BOLD
-                    }
+            text("You do not have the questions downloaded for this language. Please follow the instructions below.") {
+                addClass("oqua-missing-tq-header")
+            }
+            text("Use the link below to download the questions")
+            hyperlink(questionsURLProperty) {
+                action {
+                    hostServices.showDocument(questionsURLProperty.value)
                 }
             }
-            text("Download the zip file and import it using the import button of Orature")
+            text("Then open Orature and import the zip file you just downloaded.")
         }
 
         listview<Workbook> {
