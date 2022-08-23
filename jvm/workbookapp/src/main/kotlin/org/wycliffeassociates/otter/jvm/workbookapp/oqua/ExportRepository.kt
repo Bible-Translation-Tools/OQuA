@@ -1,6 +1,10 @@
 package org.wycliffeassociates.otter.jvm.workbookapp.oqua
 
+import org.wycliffeassociates.otter.common.data.workbook.Chapter
 import org.wycliffeassociates.otter.common.data.workbook.Workbook
+import java.io.File
+import java.io.FileNotFoundException
+import java.io.PrintWriter
 import javax.inject.Inject
 
 /** TODO
@@ -25,27 +29,46 @@ constructor (
 ) {
 
     fun exportChapter(workbook: Workbook, chapterNumber: Int) {
-        val source = getSourceChapter(workbook, chapterNumber)
-        val target = getTargetChapter(workbook, chapterNumber)
+        val sourceChapter = getSourceChapter(workbook, chapterNumber)
+        val targetChapter = getTargetChapter(workbook, chapterNumber)
+
+        lateinit var reviews: ChapterDraftReview
+        try {
+            reviews = draftReviewRepo.readDraftReviewFile(workbook, chapterNumber)
+        } catch (_: FileNotFoundException) {
+            /**
+             * Chapter was not graded
+             * Come back here to fill in empty batch
+             */
+        }
+        writeReviewsToFile(reviews)
     }
 
-    private fun getSourceChapter(workbook: Workbook, chapterNumber: Int) {
-        workbook
+    private fun getSourceChapter(workbook: Workbook, chapterNumber: Int): Chapter? { // TODO Remove nullable chapter
+        return workbook
             .source
             .chapters
             .filter { chapter ->
                 chapter.sort == chapterNumber
             }
-            .blockingFirst()
+            .blockingFirst() // TODO remove blocking first
     }
 
-    private fun getTargetChapter(workbook: Workbook, chapterNumber: Int) {
-        workbook
+    private fun getTargetChapter(workbook: Workbook, chapterNumber: Int): Chapter? {
+        return workbook
             .target
             .chapters
             .filter { chapter ->
                 chapter.sort == chapterNumber
             }
             .blockingFirst()
+    }
+
+private fun writeReviewsToFile(reviews: ChapterDraftReview) {
+        val file = File("${reviews.book}_${reviews.chapter}")
+        file.printWriter().use { out ->
+            reviews.draftReviews.forEach { review ->
+            }
+        }
     }
 }
