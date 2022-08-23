@@ -12,7 +12,7 @@ class OQuAWorkspace : Workspace() {
 
     override fun onBeforeShow() {
         super.onDock()
-        workspace.dock(find<HomeView>())
+        workspace.dock(find<LoadingView>())
 
         workspace.header.replaceWith(find<NavBar>().root)
     }
