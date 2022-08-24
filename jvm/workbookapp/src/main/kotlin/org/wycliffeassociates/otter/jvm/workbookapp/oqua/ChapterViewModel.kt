@@ -20,10 +20,10 @@ import javax.inject.Inject
 
 class ChapterViewModel : ViewModel() {
     private val wbDataStore: WorkbookDataStore by inject()
-@Inject
-    lateinit var draftReviewRepo: DraftReviewRepository
-@Inject
-    lateinit var exportRepo: ExportRepository
+
+    @Inject lateinit var draftReviewRepo: DraftReviewRepository
+    @Inject lateinit var exportRepo: ExportRepository
+    @Inject lateinit var questionsRepo: QuestionsRepository
 
     val settingsViewModel: SettingsViewModel by inject()
 
@@ -94,7 +94,7 @@ class ChapterViewModel : ViewModel() {
     }
 
     private fun loadQuestions() {
-        loadQuestionsResource()
+        questionsRepo.loadQuestionsResource()
             .subscribe { newQuestions ->
                 try {
                     draftReviewRepo
@@ -116,23 +116,23 @@ class ChapterViewModel : ViewModel() {
             .addTo(disposables)
     }
 
-    private fun loadQuestionsResource(): Single<List<Question>> {
-        return wbDataStore
-            .getSourceChapter()
-            .flatMapObservable { chapter ->
-                chapter.chunks
-            }
-            .flatMap { chunk ->
-                Question.getQuestionsFromChunk(chunk)
-            }
-            .toList()
-            .observeOnFx()
-            .map { questions ->
-                questionsDedup(questions).sortedBy {
-                    it.end
-                }
-            }
-    }
+//    private fun loadQuestionsResource(): Single<List<Question>> {
+//        return wbDataStore
+//            .getSourceChapter()
+//            .flatMapObservable { chapter ->
+//                chapter.chunks
+//            }
+//            .flatMap { chunk ->
+//                Question.getQuestionsFromChunk(chunk)
+//            }
+//            .toList()
+//            .observeOnFx()
+//            .map { questions ->
+//                questionsDedup(questions).sortedBy {
+//                    it.end
+//                }
+//            }
+//    }
 
     private fun loadDraftReviewIntoQuestions(questions: List<Question>, draftReviews: List<QuestionDraftReview>) {
         questions.forEach { question ->
@@ -184,5 +184,10 @@ class ChapterViewModel : ViewModel() {
 
     private fun getVerseFrame(verse: Int): Int {
         return verseMarkers[verse - 1].location
+    }
+
+    fun exportChapter() {
+        saveDraftReview()
+        exportRepo.exportChapter(workbook, chapterNumber)
     }
 }

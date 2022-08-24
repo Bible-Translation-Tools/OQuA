@@ -32,6 +32,7 @@ data class Question(
             ?.title
             ?.textItem
             ?.text
+            ?.substring(2)
 
     val answer: String?
         get() = resource

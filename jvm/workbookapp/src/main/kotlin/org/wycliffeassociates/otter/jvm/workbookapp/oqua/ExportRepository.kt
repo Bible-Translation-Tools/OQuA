@@ -1,5 +1,7 @@
 package org.wycliffeassociates.otter.jvm.workbookapp.oqua
 
+import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.rxkotlin.addTo
 import org.wycliffeassociates.otter.common.data.workbook.Chapter
 import org.wycliffeassociates.otter.common.data.workbook.Workbook
 import java.io.File
@@ -22,53 +24,117 @@ import javax.inject.Inject
  * -- Nope! Check out DraftReviewRepository. It has an injected Directory Provider
  */
 
-class ExportRepository
-@Inject
-constructor (
-    private val draftReviewRepo: DraftReviewRepository
+class ExportRepository @Inject constructor (
+    private val draftReviewRepo: DraftReviewRepository,
+    private val questionsRepo: QuestionsRepository
 ) {
+    private val disposables = CompositeDisposable()
 
     fun exportChapter(workbook: Workbook, chapterNumber: Int) {
-        val sourceChapter = getSourceChapter(workbook, chapterNumber)
-        val targetChapter = getTargetChapter(workbook, chapterNumber)
-
         lateinit var reviews: ChapterDraftReview
         try {
             reviews = draftReviewRepo.readDraftReviewFile(workbook, chapterNumber)
+            writeReviewsToFile(reviews)
         } catch (_: FileNotFoundException) {
-            /**
-             * Chapter was not graded
-             * Come back here to fill in empty batch
-             */
+            writeBlankReview(workbook, chapterNumber)
         }
-        writeReviewsToFile(reviews)
     }
 
-    private fun getSourceChapter(workbook: Workbook, chapterNumber: Int): Chapter? { // TODO Remove nullable chapter
-        return workbook
-            .source
-            .chapters
-            .filter { chapter ->
-                chapter.sort == chapterNumber
+    private fun writeBlankReview(workbook: Workbook, chapterNumber: Int) {
+        questionsRepo.loadQuestionsResource()
+            .subscribe { questions ->
+                val reviews = ChapterDraftReview(
+                    workbook.source.language.name,
+                    workbook.target.language.name,
+                    workbook.target.title,
+                    chapterNumber,
+                    questions.map { QuestionDraftReview.mapFromQuestion(it) }
+                )
             }
-            .blockingFirst() // TODO remove blocking first
+            .addTo(disposables)
     }
 
-    private fun getTargetChapter(workbook: Workbook, chapterNumber: Int): Chapter? {
-        return workbook
-            .target
-            .chapters
-            .filter { chapter ->
-                chapter.sort == chapterNumber
-            }
-            .blockingFirst()
-    }
-
-private fun writeReviewsToFile(reviews: ChapterDraftReview) {
-        val file = File("${reviews.book}_${reviews.chapter}")
+    private fun writeReviewsToFile(reviews: ChapterDraftReview) {
+        val file = File("${reviews.source}-${reviews.target}__${reviews.book}_${reviews.chapter}.html")
         file.printWriter().use { out ->
+            writeHeaderHTML(reviews, out)
             reviews.draftReviews.forEach { review ->
+                writeReviewHTML(review, out)
             }
+            writeFooterHTML(out)
         }
+    }
+
+    private fun writeHeaderHTML(reviews: ChapterDraftReview, out: PrintWriter) {
+        out.println("""
+            |<!DOCTYPE html>
+            |<html>
+            |  <head>
+            |    <title>${getTitle(reviews)}</title>
+            |    <style>
+            |      table, th, td {
+            |        border: 1px solid black;
+            |      }
+            |      .dot {
+            |        height: 25px;
+            |        width: 25px;
+            |        border-radius: 50%;
+            |        border: 1px solid black;
+            |        display: inline-block;
+            |      }
+            |    </style>
+            |  </head>
+            |  <body>
+            |    <table>
+            |      <tr>
+            |        <th>Verse(s)</th>
+            |        <th>Question</th>
+            |        <th>Answer</th>
+            |        <th>Result</th>
+            |        <th>Explanation</th>
+            |      </tr>
+        """.trimMargin())
+    }
+
+    private fun writeReviewHTML(review: QuestionDraftReview, out: PrintWriter) {
+        out.println("""
+            |      <tr>
+            |        <td>${getVerseLabel(review)}</td>
+            |        <td>${review.question}</td>
+            |        <td>${review.answer}</td>
+            |        <td>${getResultCircle(review)}</td>
+            |        <td>${review.result.explanation}</td>
+            |      </tr>
+        """.trimMargin())
+    }
+
+    private fun writeFooterHTML(out: PrintWriter) {
+        out.println("""
+            |    </table>
+            |  </body>
+            |</html>
+        """.trimMargin())
+    }
+
+    private fun getTitle(reviews: ChapterDraftReview): String {
+        return "${reviews.source}-${reviews.target} : ${reviews.book} ${reviews.chapter}"
+    }
+
+    private fun getVerseLabel(review: QuestionDraftReview): String {
+        return if (review.start == review.end) {
+            "${review.start}"
+        } else {
+            "${review.start} - ${review.end}"
+        }
+    }
+
+    private fun getResultCircle(review: QuestionDraftReview): String {
+        val color = when (review.result.result) {
+            ResultValue.CORRECT -> "green"
+            ResultValue.INCORRECT -> "red"
+            ResultValue.INVALID_QUESTION -> "yellow"
+            else -> "white"
+        }
+        return "<span class=\"dot\" style=\"background-color:$color\"></span>"
     }
 }

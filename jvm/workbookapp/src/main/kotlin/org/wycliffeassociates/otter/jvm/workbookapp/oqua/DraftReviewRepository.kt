@@ -29,9 +29,9 @@ constructor (
         val file = File("${dir.absoluteFile}/ch${chapter}.json")
 
         val draftReviews = ChapterDraftReview(
-            workbook.source.language.slug,
-            workbook.target.language.slug,
-            workbook.target.slug,
+            workbook.source.language.name,
+            workbook.target.language.name,
+            workbook.target.title,
             chapter,
             questions.map {
                 QuestionDraftReview.mapFromQuestion(it)

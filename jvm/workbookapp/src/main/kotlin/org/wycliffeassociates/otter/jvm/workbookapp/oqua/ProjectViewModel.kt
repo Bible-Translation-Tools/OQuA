@@ -5,15 +5,23 @@ import io.reactivex.functions.Consumer
 import io.reactivex.rxkotlin.addTo
 import org.wycliffeassociates.otter.common.data.workbook.Chapter
 import org.wycliffeassociates.otter.common.data.workbook.Workbook
+import org.wycliffeassociates.otter.jvm.workbookapp.di.IDependencyGraphProvider
 import org.wycliffeassociates.otter.jvm.workbookapp.ui.viewmodel.WorkbookDataStore
 import tornadofx.*
+import javax.inject.Inject
 
 class ProjectViewModel: ViewModel() {
     private val wbDataStore: WorkbookDataStore by inject()
 
+    @Inject lateinit var exportRepo: ExportRepository
+
     val chapters = observableListOf<Chapter>()
 
     private val disposables = CompositeDisposable()
+
+    init {
+        (app as IDependencyGraphProvider).dependencyGraph.inject(this)
+    }
 
     fun dock() {
         getChapters(wbDataStore.workbook)
@@ -42,5 +50,11 @@ class ProjectViewModel: ViewModel() {
 
     private fun clearChapters() {
         chapters.setAll()
+    }
+
+    fun exportProject() {
+        chapters.forEach { chapter ->
+            exportRepo.exportChapter(wbDataStore.workbook, chapter.sort)
+        }
     }
 }

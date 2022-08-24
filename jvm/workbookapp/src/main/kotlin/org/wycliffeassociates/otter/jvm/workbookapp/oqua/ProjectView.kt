@@ -14,9 +14,16 @@ class ProjectView : View() {
         viewModel.undock()
     }
 
-    override val root = listview(viewModel.chapters) {
-        vgrow = Priority.ALWAYS
-        hgrow = Priority.ALWAYS
-        cellFragment(ChapterListCellFragment::class)
+    override val root = vbox {
+        button("Export") {
+            action {
+                viewModel.exportProject()
+            }
+        }
+        listview(viewModel.chapters) {
+            vgrow = Priority.ALWAYS
+            hgrow = Priority.ALWAYS
+            cellFragment(ChapterListCellFragment::class)
+        }
     }
 }
