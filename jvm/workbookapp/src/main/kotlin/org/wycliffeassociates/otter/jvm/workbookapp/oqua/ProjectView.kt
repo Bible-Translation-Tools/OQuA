@@ -15,9 +15,22 @@ class ProjectView : View() {
     }
 
     override val root = vbox {
-        button("Export") {
-            action {
-                viewModel.exportProject()
+        borderpane {
+            left = button("Export") {
+                action {
+                    viewModel.exportProject()
+                }
+            }
+            right = vbox {
+                progressbar {
+                    progressProperty().bind(viewModel.exportProgress)
+                    visibleWhen(progressProperty().isNotEqualTo(1.0, Double.MIN_VALUE))
+                    managedWhen(visibleProperty())
+                }
+                text("Export Complete") {
+                    visibleWhen(viewModel.exportComplete)
+                    managedWhen(visibleProperty())
+                }
             }
         }
         listview(viewModel.chapters) {

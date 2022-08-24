@@ -3,6 +3,8 @@ package org.wycliffeassociates.otter.jvm.workbookapp.oqua
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.functions.Consumer
 import io.reactivex.rxkotlin.addTo
+import javafx.beans.property.SimpleBooleanProperty
+import javafx.beans.property.SimpleDoubleProperty
 import org.wycliffeassociates.otter.common.data.workbook.Chapter
 import org.wycliffeassociates.otter.common.data.workbook.Workbook
 import org.wycliffeassociates.otter.jvm.workbookapp.di.IDependencyGraphProvider
@@ -16,6 +18,8 @@ class ProjectViewModel: ViewModel() {
     @Inject lateinit var exportRepo: ExportRepository
 
     val chapters = observableListOf<Chapter>()
+    val exportProgress = SimpleDoubleProperty(1.0)
+    val exportComplete = SimpleBooleanProperty(false)
 
     private val disposables = CompositeDisposable()
 
@@ -25,6 +29,8 @@ class ProjectViewModel: ViewModel() {
 
     fun dock() {
         getChapters(wbDataStore.workbook)
+        exportProgress.set(1.0)
+        exportComplete.set(false)
         wbDataStore.activeChapterProperty.set(null)
     }
 
@@ -53,8 +59,22 @@ class ProjectViewModel: ViewModel() {
     }
 
     fun exportProject() {
+        var completed = 0
+        exportProgress.set(0.0)
+        exportComplete.set(false)
         chapters.forEach { chapter ->
-            exportRepo.exportChapter(wbDataStore.workbook, chapter.sort)
+            exportRepo.exportChapter(
+                wbDataStore.workbook,
+                chapter
+            ) { _, _, success ->
+                if (success) {
+                    completed++
+                    exportProgress.set(completed.toDouble() / chapters.size.toDouble())
+                    if (completed == chapters.size) {
+                        exportComplete.set(true)
+                    }
+                }
+            }
         }
     }
 }

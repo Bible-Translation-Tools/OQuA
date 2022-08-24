@@ -21,9 +21,15 @@ class ChapterView : View() {
         vgrow = Priority.ALWAYS
         hgrow = Priority.ALWAYS
 
-        button("Export") {
-            action {
-                viewModel.exportChapter()
+        hbox(5) {
+            button("Export") {
+                action {
+                    viewModel.exportChapter()
+                }
+            }
+            text("Export Complete") {
+                visibleWhen(viewModel.exportComplete)
+                managedWhen(visibleProperty())
             }
         }
         simpleaudioplayer {

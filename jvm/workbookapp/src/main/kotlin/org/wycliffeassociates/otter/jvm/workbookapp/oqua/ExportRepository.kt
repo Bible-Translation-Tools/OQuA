@@ -30,31 +30,58 @@ class ExportRepository @Inject constructor (
 ) {
     private val disposables = CompositeDisposable()
 
-    fun exportChapter(workbook: Workbook, chapterNumber: Int) {
+    fun exportChapter(workbook: Workbook, chapter: Chapter, callback: (Workbook, Chapter, Boolean) -> Unit) {
         lateinit var reviews: ChapterDraftReview
         try {
-            reviews = draftReviewRepo.readDraftReviewFile(workbook, chapterNumber)
-            writeReviewsToFile(reviews)
+            reviews = draftReviewRepo.readDraftReviewFile(workbook, chapter)
+            writeReviewsToFile(
+                reviews,
+                packageCallback(callback, workbook, chapter)
+            )
         } catch (_: FileNotFoundException) {
-            writeBlankReview(workbook, chapterNumber)
+            handleMissingReview(
+                workbook,
+                chapter,
+                packageCallback(callback, workbook, chapter)
+            )
         }
     }
 
-    private fun writeBlankReview(workbook: Workbook, chapterNumber: Int) {
-        questionsRepo.loadQuestionsResource()
+    private fun packageCallback(
+        callback: (Workbook, Chapter, Boolean) -> Unit,
+        workbook: Workbook,
+        chapter: Chapter
+    ): (Boolean) -> Unit = { success ->
+        callback(workbook, chapter, success)
+    }
+
+    private fun handleMissingReview(workbook: Workbook, chapter: Chapter, callback: (Boolean) -> Unit) {
+        workbook
+            .source
+            .chapters
+            .filter { it.sort == chapter.sort }
+            .subscribe { sourceChapter ->
+                writeBlankReview(workbook, sourceChapter, callback)
+            }
+            .addTo(disposables)
+    }
+
+    private fun writeBlankReview(workbook: Workbook, sourceChapter: Chapter, callback: (Boolean) -> Unit) {
+        questionsRepo.loadQuestionsResource(sourceChapter)
             .subscribe { questions ->
                 val reviews = ChapterDraftReview(
                     workbook.source.language.name,
                     workbook.target.language.name,
                     workbook.target.title,
-                    chapterNumber,
+                    sourceChapter.sort,
                     questions.map { QuestionDraftReview.mapFromQuestion(it) }
                 )
+                writeReviewsToFile(reviews, callback)
             }
             .addTo(disposables)
     }
 
-    private fun writeReviewsToFile(reviews: ChapterDraftReview) {
+    private fun writeReviewsToFile(reviews: ChapterDraftReview, callback: (Boolean) -> Unit) {
         val file = File("${reviews.source}-${reviews.target}__${reviews.book}_${reviews.chapter}.html")
         file.printWriter().use { out ->
             writeHeaderHTML(reviews, out)
@@ -63,6 +90,7 @@ class ExportRepository @Inject constructor (
             }
             writeFooterHTML(out)
         }
+        callback(true)
     }
 
     private fun writeHeaderHTML(reviews: ChapterDraftReview, out: PrintWriter) {
@@ -88,9 +116,9 @@ class ExportRepository @Inject constructor (
             |    <table>
             |      <tr>
             |        <th>Verse(s)</th>
+            |        <th>Result</th>
             |        <th>Question</th>
             |        <th>Answer</th>
-            |        <th>Result</th>
             |        <th>Explanation</th>
             |      </tr>
         """.trimMargin())
@@ -100,9 +128,9 @@ class ExportRepository @Inject constructor (
         out.println("""
             |      <tr>
             |        <td>${getVerseLabel(review)}</td>
+            |        <td>${getResultCircle(review)}</td>
             |        <td>${review.question}</td>
             |        <td>${review.answer}</td>
-            |        <td>${getResultCircle(review)}</td>
             |        <td>${review.result.explanation}</td>
             |      </tr>
         """.trimMargin())
