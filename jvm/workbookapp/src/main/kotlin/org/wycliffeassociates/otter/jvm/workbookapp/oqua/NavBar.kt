@@ -6,6 +6,7 @@ class NavBar : View() {
     private val viewModel: NavBarViewModel by inject()
 
     override val root = borderpane {
+
         center = hbox(5) {
             addClass("oqua-nav-bar")
 

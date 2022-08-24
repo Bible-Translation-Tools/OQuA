@@ -50,7 +50,9 @@ class TCardListCellFragment: ListCellFragment<TranslationCard>() {
                 }
             }
             text("Then import that file using the button above.")
-            text("You will probably have to restart OQuA after doing so.")
+            text("You will probably have to restart OQuA after doing so.") {
+                addClass("oqua-missing-tq-header")
+            }
         }
 
         listview<Workbook> {

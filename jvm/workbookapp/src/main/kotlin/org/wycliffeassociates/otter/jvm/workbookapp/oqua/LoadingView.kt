@@ -27,7 +27,6 @@ class LoadingView : View() {
 
     override val root = stackpane {
         addClass("splash__root")
-        add(resources.imageview("/orature_splash.png"))
         progressbar(viewModel.progressProperty) {
             addClass("splash__progress")
             fitToParentWidth()
@@ -49,5 +48,6 @@ class LoadingView : View() {
 
     private fun finish() {
         workspace.dock(find<HomeView>())
+        workspace.header.replaceWith(find<NavBar>().root)
     }
 }

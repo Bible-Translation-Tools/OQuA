@@ -22,9 +22,7 @@ import com.jfoenix.controls.JFXSnackbar
 import com.jfoenix.controls.JFXSnackbarLayout
 import javafx.application.Platform
 import javafx.event.EventHandler
-import javafx.scene.control.Button
 import javafx.scene.input.DragEvent
-import javafx.scene.input.KeyCode
 import javafx.scene.input.TransferMode
 import javafx.scene.layout.Priority
 import javafx.util.Duration
@@ -34,18 +32,13 @@ import org.slf4j.LoggerFactory
 import org.wycliffeassociates.otter.jvm.controls.dialog.confirmdialog
 import org.wycliffeassociates.otter.jvm.controls.styles.tryImportStylesheet
 import org.wycliffeassociates.otter.jvm.workbookapp.SnackbarHandler
-import org.wycliffeassociates.otter.jvm.workbookapp.ui.viewmodel.AddFilesViewModel
-import org.wycliffeassociates.otter.jvm.workbookapp.ui.viewmodel.SettingsViewModel
 import tornadofx.*
 import java.text.MessageFormat
 
 class ImportView : View() {
     private val logger = LoggerFactory.getLogger(ImportView::class.java)
 
-    private val viewModel: AddFilesViewModel by inject()
-    private val settingsViewModel: SettingsViewModel by inject()
-
-    private lateinit var closeButton: Button
+    private val viewModel: ImportViewModel by inject()
 
     override val root = vbox {
         addClass("app-drawer__content")
@@ -65,34 +58,12 @@ class ImportView : View() {
                         addClass("app-drawer__title")
                     }
                     region { hgrow = Priority.ALWAYS }
-                    button {
-                        addClass("btn", "btn--secondary")
-                        graphic = FontIcon(MaterialDesign.MDI_CLOSE)
-                        tooltip(messages["close"])
-                        action { collapse() }
-                        closeButton = this
-                    }
                 }
 
                 vbox {
                     addClass("app-drawer__section")
                     label(messages["dragAndDrop"]).apply {
                         addClass("app-drawer__subtitle")
-                    }
-
-                    textflow {
-                        text(messages["dragAndDropDescription"]).apply {
-                            addClass("app-drawer__text")
-                        }
-                        hyperlink("audio.bibleineverylanguage.org").apply {
-                            addClass("wa-text--hyperlink", "app-drawer__text--link")
-                            tooltip {
-                                text = "audio.bibleineverylanguage.org/gl"
-                            }
-                            action {
-                                hostServices.showDocument("https://audio.bibleineverylanguage.org/gl")
-                            }
-                        }
                     }
                 }
 
@@ -130,10 +101,6 @@ class ImportView : View() {
                 }
             }
         }
-
-        setOnKeyReleased {
-            if (it.code == KeyCode.ESCAPE) collapse()
-        }
     }
 
     init {
@@ -144,17 +111,10 @@ class ImportView : View() {
         initSuccessDialog()
         initErrorDialog()
         createSnackBar()
-
-//        subscribe<DrawerEvent<UIComponent>> {
-//            if (it.action == DrawerEventAction.OPEN) {
-//                focusCloseButton()
-//            }
-//        }
     }
 
     override fun onDock() {
         super.onDock()
-        focusCloseButton()
     }
 
     private fun initImportDialog() {
@@ -174,8 +134,6 @@ class ImportView : View() {
             backgroundImageFileProperty.bind(viewModel.importedProjectCoverProperty)
             progressTitleProperty.set(messages["pleaseWait"])
             showProgressBarProperty.set(true)
-            orientationProperty.set(settingsViewModel.orientationProperty.value)
-            themeProperty.set(settingsViewModel.appColorMode.value)
         }
 
         viewModel.showImportDialogProperty.onChange {
@@ -198,8 +156,6 @@ class ImportView : View() {
             )
             messageTextProperty.set(messages["importResourceSuccessMessage"])
             backgroundImageFileProperty.bind(viewModel.importedProjectCoverProperty)
-            orientationProperty.set(settingsViewModel.orientationProperty.value)
-            themeProperty.set(settingsViewModel.appColorMode.value)
 
             cancelButtonTextProperty.set(messages["close"])
             onCloseAction { viewModel.showImportSuccessDialogProperty.set(false) }
@@ -228,8 +184,6 @@ class ImportView : View() {
                 it ?: messages["importResourceFailMessage"]
             })
             backgroundImageFileProperty.bind(viewModel.importedProjectCoverProperty)
-            orientationProperty.set(settingsViewModel.orientationProperty.value)
-            themeProperty.set(settingsViewModel.appColorMode.value)
 
             cancelButtonTextProperty.set(messages["close"])
             onCloseAction { viewModel.showImportErrorDialogProperty.set(false) }
@@ -277,16 +231,5 @@ class ImportView : View() {
                     )
                 )
             }
-    }
-
-    private fun focusCloseButton() {
-        runAsync {
-            Thread.sleep(500)
-            runLater(closeButton::requestFocus)
-        }
-    }
-
-    private fun collapse() {
-//        fire(DrawerEvent(this::class, DrawerEventAction.CLOSE))
     }
 }
