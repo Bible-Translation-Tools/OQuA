@@ -181,11 +181,15 @@ class ChapterViewModel : ViewModel() {
     }
 
     fun exportChapter() {
-        exportComplete.set(false)
-        saveDraftReview()
-        exportRepo.exportChapter(workbook, chapter) { _, _, success ->
-            if (success) {
-                exportComplete.set(true)
+        val directory = chooseDirectory(FX.messages["exportChapter"])
+
+        if (directory != null) {
+            exportComplete.set(false)
+            saveDraftReview()
+            exportRepo.exportChapter(workbook, chapter, directory) { _, _, success ->
+                if (success) {
+                    exportComplete.set(true)
+                }
             }
         }
     }

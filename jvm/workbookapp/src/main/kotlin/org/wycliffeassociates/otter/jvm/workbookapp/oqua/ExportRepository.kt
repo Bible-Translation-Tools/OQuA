@@ -30,18 +30,20 @@ class ExportRepository @Inject constructor (
 ) {
     private val disposables = CompositeDisposable()
 
-    fun exportChapter(workbook: Workbook, chapter: Chapter, callback: (Workbook, Chapter, Boolean) -> Unit) {
+    fun exportChapter(workbook: Workbook, chapter: Chapter, directory: File, callback:(Workbook, Chapter, Boolean) -> Unit) {
         lateinit var reviews: ChapterDraftReview
         try {
             reviews = draftReviewRepo.readDraftReviewFile(workbook, chapter)
             writeReviewsToFile(
                 reviews,
+                directory,
                 packageCallback(callback, workbook, chapter)
             )
         } catch (_: FileNotFoundException) {
             handleMissingReview(
                 workbook,
                 chapter,
+                directory,
                 packageCallback(callback, workbook, chapter)
             )
         }
@@ -55,18 +57,18 @@ class ExportRepository @Inject constructor (
         callback(workbook, chapter, success)
     }
 
-    private fun handleMissingReview(workbook: Workbook, chapter: Chapter, callback: (Boolean) -> Unit) {
+    private fun handleMissingReview(workbook: Workbook, chapter: Chapter, directory: File, callback:(Boolean) -> Unit) {
         workbook
             .source
             .chapters
             .filter { it.sort == chapter.sort }
             .subscribe { sourceChapter ->
-                writeBlankReview(workbook, sourceChapter, callback)
+                writeBlankReview(workbook, sourceChapter, directory, callback)
             }
             .addTo(disposables)
     }
 
-    private fun writeBlankReview(workbook: Workbook, sourceChapter: Chapter, callback: (Boolean) -> Unit) {
+    private fun writeBlankReview(workbook: Workbook, sourceChapter: Chapter, directory: File, callback:(Boolean) -> Unit) {
         questionsRepo.loadQuestionsResource(sourceChapter)
             .subscribe { questions ->
                 val reviews = ChapterDraftReview(
@@ -76,13 +78,13 @@ class ExportRepository @Inject constructor (
                     sourceChapter.sort,
                     questions.map { QuestionDraftReview.mapFromQuestion(it) }
                 )
-                writeReviewsToFile(reviews, callback)
+                writeReviewsToFile(reviews, directory, callback)
             }
             .addTo(disposables)
     }
 
-    private fun writeReviewsToFile(reviews: ChapterDraftReview, callback: (Boolean) -> Unit) {
-        val file = File("${reviews.source}-${reviews.target}__${reviews.book}_${reviews.chapter}.html")
+    private fun writeReviewsToFile(reviews: ChapterDraftReview, directory: File, callback: (Boolean) -> Unit) {
+        val file = getTargetFile(reviews, directory)
         file.printWriter().use { out ->
             writeHeaderHTML(reviews, out)
             reviews.draftReviews.forEach { review ->
@@ -91,6 +93,11 @@ class ExportRepository @Inject constructor (
             writeFooterHTML(out)
         }
         callback(true)
+    }
+
+    private fun getTargetFile(reviews: ChapterDraftReview, directory: File): File {
+        val name = "${reviews.source}-${reviews.target}__${reviews.book}_${reviews.chapter}.html"
+        return File("${directory.absolutePath}/$name")
     }
 
     private fun writeHeaderHTML(reviews: ChapterDraftReview, out: PrintWriter) {

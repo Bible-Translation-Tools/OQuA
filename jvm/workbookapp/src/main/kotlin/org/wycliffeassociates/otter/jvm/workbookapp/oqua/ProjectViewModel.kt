@@ -59,19 +59,25 @@ class ProjectViewModel: ViewModel() {
     }
 
     fun exportProject() {
-        var completed = 0
-        exportProgress.set(0.0)
-        exportComplete.set(false)
-        chapters.forEach { chapter ->
-            exportRepo.exportChapter(
-                wbDataStore.workbook,
-                chapter
-            ) { _, _, success ->
-                if (success) {
-                    completed++
-                    exportProgress.set(completed.toDouble() / chapters.size.toDouble())
-                    if (completed == chapters.size) {
-                        exportComplete.set(true)
+        val directory = chooseDirectory(FX.messages["exportChapter"])
+
+        if (directory != null) {
+            var completed = 0
+            exportProgress.set(0.0)
+            exportComplete.set(false)
+
+            chapters.forEach { chapter ->
+                exportRepo.exportChapter(
+                    wbDataStore.workbook,
+                    chapter,
+                    directory
+                ) { _, _, success ->
+                    if (success) {
+                        completed++
+                        exportProgress.set(completed.toDouble() / chapters.size.toDouble())
+                        if (completed == chapters.size) {
+                            exportComplete.set(true)
+                        }
                     }
                 }
             }
