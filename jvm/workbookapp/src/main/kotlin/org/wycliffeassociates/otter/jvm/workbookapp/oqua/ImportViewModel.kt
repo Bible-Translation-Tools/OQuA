@@ -22,13 +22,10 @@ import com.github.thomasnield.rxkotlinfx.observeOnFx
 import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.PublishSubject
 import javafx.beans.property.SimpleBooleanProperty
-import javafx.beans.property.SimpleObjectProperty
 import javafx.beans.property.SimpleStringProperty
 import javafx.stage.FileChooser
 import org.slf4j.LoggerFactory
 import org.wycliffeassociates.otter.common.data.OratureFileFormat
-import org.wycliffeassociates.otter.common.data.primitives.ImageRatio
-import org.wycliffeassociates.otter.common.domain.resourcecontainer.artwork.ArtworkAccessor
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.ImportResourceContainer
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.ImportResult
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.projectimportexport.ProjectImporter
@@ -52,7 +49,6 @@ class ImportViewModel : ViewModel() {
     val showImportErrorDialogProperty = SimpleBooleanProperty(false)
     val importErrorMessage = SimpleStringProperty(null)
     val importedProjectTitleProperty = SimpleStringProperty()
-    val importedProjectCoverProperty = SimpleObjectProperty<File>()
 
     val snackBarObservable: PublishSubject<String> = PublishSubject.create()
 
@@ -67,7 +63,7 @@ class ImportViewModel : ViewModel() {
     }
 
     fun onDropFile(files: List<File>) {
-        if (isValidImportFile(files)) {
+        if (validateImportFile(files)) {
             importResourceContainer(files.first())
         }
     }
@@ -103,7 +99,6 @@ class ImportViewModel : ViewModel() {
             }
             .doFinally {
                 importedProjectTitleProperty.set(null)
-                importedProjectCoverProperty.set(null)
             }
             .subscribe { result: ImportResult ->
                 when (result) {
@@ -125,7 +120,7 @@ class ImportViewModel : ViewModel() {
             }
     }
 
-    private fun isValidImportFile(files: List<File>): Boolean {
+    private fun validateImportFile(files: List<File>): Boolean {
         return when {
             files.size > 1 -> {
                 snackBarObservable.onNext(messages["importMultipleError"])
@@ -156,10 +151,6 @@ class ImportViewModel : ViewModel() {
                     .subscribe { resourceMetadata ->
                         resourceMetadata?.let {
                             importedProjectTitleProperty.set(project.title)
-                            val coverArtAccessor = ArtworkAccessor(directoryProvider, it, project.identifier)
-                            importedProjectCoverProperty.set(
-                                coverArtAccessor.getArtwork(ImageRatio.FOUR_BY_ONE)?.file
-                            )
                         }
                     }
             }
