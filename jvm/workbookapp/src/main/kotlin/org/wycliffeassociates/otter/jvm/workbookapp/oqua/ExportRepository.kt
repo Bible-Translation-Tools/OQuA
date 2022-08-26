@@ -87,9 +87,7 @@ class ExportRepository @Inject constructor (
         val file = getTargetFile(reviews, directory)
         file.printWriter().use { out ->
             writeHeaderHTML(reviews, out)
-            reviews.draftReviews.forEach { review ->
-                writeReviewHTML(review, out)
-            }
+            writeBodyHTML(reviews, out)
             writeFooterHTML(out)
         }
         callback(true)
@@ -107,6 +105,13 @@ class ExportRepository @Inject constructor (
             |  <head>
             |    <title>${getTitle(reviews)}</title>
             |    <style>
+            |      .piechart {
+            |        display: block;
+            |        border-radius: 50%;
+            |        width: 100px;
+            |        height: 100px;
+            |        background-image: ${getPieChartBackgroundImage(reviews)};
+            |      }
             |      table, th, td {
             |        border: 1px solid black;
             |      }
@@ -119,7 +124,51 @@ class ExportRepository @Inject constructor (
             |      }
             |    </style>
             |  </head>
+        """.trimMargin())
+    }
+
+    private fun getPieChartBackgroundImage(reviews: ChapterDraftReview): String {
+        var correct = 0
+        var incorrect = 0
+        var invalid = 0
+        var unanswered = 0
+
+        reviews.draftReviews.forEach { review ->
+            when (review.result.result) {
+                ResultValue.CORRECT -> correct++
+                ResultValue.INCORRECT -> incorrect++
+                ResultValue.INVALID_QUESTION -> invalid++
+                ResultValue.UNANSWERED -> unanswered++
+            }
+        }
+
+        val correctAngle = convertAmountToAngle(correct, reviews.draftReviews.size)
+        val incorrectAngle = convertAmountToAngle(incorrect, reviews.draftReviews.size) + correctAngle
+        val invalidAngle = convertAmountToAngle(invalid, reviews.draftReviews.size) + incorrectAngle
+        val unansweredAngle = convertAmountToAngle(unanswered, reviews.draftReviews.size) + invalidAngle
+
+        return "conic-gradient(green 0 ${
+            correctAngle
+        }deg, red 0 ${
+            incorrectAngle
+        }deg, yellow 0 ${
+            invalidAngle
+        }deg, grey 0 ${
+            unansweredAngle
+        }deg)"
+    }
+
+    private fun convertAmountToAngle(amount: Int, outOf: Int): Int {
+        return 360 * amount / outOf
+    }
+
+    private fun writeBodyHTML(reviews: ChapterDraftReview, out: PrintWriter) {
+        out.println("""
             |  <body>
+            |    <h1>${reviews.book} chapter ${reviews.chapter}</h1>
+            |    <h2>${reviews.source} -> ${reviews.target}</h2>
+            |    <div class="piechart"></div>
+            |    <br>
             |    <table>
             |      <tr>
             |        <th>Verse(s)</th>
@@ -129,6 +178,10 @@ class ExportRepository @Inject constructor (
             |        <th>Explanation</th>
             |      </tr>
         """.trimMargin())
+
+        reviews.draftReviews.forEach { review ->
+            writeReviewHTML(review, out)
+        }
     }
 
     private fun writeReviewHTML(review: QuestionDraftReview, out: PrintWriter) {
