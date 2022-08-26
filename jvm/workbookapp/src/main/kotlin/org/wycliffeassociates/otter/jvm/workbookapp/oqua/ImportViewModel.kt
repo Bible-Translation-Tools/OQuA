@@ -47,7 +47,7 @@ class ImportViewModel : ViewModel() {
     @Inject lateinit var importRcProvider: Provider<ImportResourceContainer>
     @Inject lateinit var importProvider: Provider<ProjectImporter>
 
-    val showImportDialogProperty = SimpleBooleanProperty(false)
+    val showImportProperty = SimpleBooleanProperty(false)
     val showImportSuccessDialogProperty = SimpleBooleanProperty(false)
     val showImportErrorDialogProperty = SimpleBooleanProperty(false)
     val importErrorMessage = SimpleStringProperty(null)
@@ -58,6 +58,12 @@ class ImportViewModel : ViewModel() {
 
     init {
         (app as IDependencyGraphProvider).dependencyGraph.inject(this)
+    }
+
+    fun dock() {
+        showImportProperty.set(false)
+        showImportSuccessDialogProperty.set(false)
+        showImportErrorDialogProperty.set(false)
     }
 
     fun onDropFile(files: List<File>) {
@@ -84,7 +90,9 @@ class ImportViewModel : ViewModel() {
     }
 
     private fun importResourceContainer(file: File) {
-        showImportDialogProperty.set(true)
+        showImportProperty.set(true)
+        showImportSuccessDialogProperty.set(false)
+        showImportErrorDialogProperty.set(false)
 
         importRcProvider.get()
             .import(file)
@@ -100,17 +108,20 @@ class ImportViewModel : ViewModel() {
             .subscribe { result: ImportResult ->
                 when (result) {
                     ImportResult.SUCCESS -> {
+                        showImportProperty.value = false
                         showImportSuccessDialogProperty.value = true
                     }
                     ImportResult.DEPENDENCY_ERROR -> {
                         importErrorMessage.set(messages["importErrorDependencyExists"])
+                        showImportProperty.value = false
                         showImportErrorDialogProperty.value = true
                     }
                     else -> {
+                        showImportProperty.value = false
                         showImportErrorDialogProperty.value = true
                     }
                 }
-                showImportDialogProperty.value = false
+                showImportProperty.value = false
             }
     }
 
