@@ -21,7 +21,7 @@ class ChapterViewModel : ViewModel() {
     private val wbDataStore: WorkbookDataStore by inject()
 
     @Inject lateinit var draftReviewRepo: DraftReviewRepository
-    @Inject lateinit var exportRepo: ExportRepository
+    @Inject lateinit var exportRepo: ChapterReviewExporter
     @Inject lateinit var questionsRepo: QuestionsRepository
 
     val settingsViewModel: SettingsViewModel by inject()

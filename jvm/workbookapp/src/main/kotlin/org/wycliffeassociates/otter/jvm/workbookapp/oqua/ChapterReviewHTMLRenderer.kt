@@ -1,101 +1,13 @@
 package org.wycliffeassociates.otter.jvm.workbookapp.oqua
 
-import io.reactivex.disposables.CompositeDisposable
-import io.reactivex.rxkotlin.addTo
-import org.wycliffeassociates.otter.common.data.workbook.Chapter
-import org.wycliffeassociates.otter.common.data.workbook.Workbook
-import java.io.File
-import java.io.FileNotFoundException
 import java.io.PrintWriter
-import javax.inject.Inject
 
-/** TODO
- * Implement Export
- * Must be a function that takes a chapter and exports its saved results
- *
- * When in chapter view, save results and export the chapter
- * When in project view, export each chapter
- *
- * Must be able to grab questions from chapters using the draftReviewRepo
- * Probably will be an interface that gets injected into both project and chapter view model
- *
- * Maybe have it be a view model? Sounds wrong
- * -- Have it be a Component
- * -- Nope! Check out DraftReviewRepository. It has an injected Directory Provider
- */
-
-class ExportRepository @Inject constructor (
-    private val draftReviewRepo: DraftReviewRepository,
-    private val questionsRepo: QuestionsRepository
-) {
-    private val disposables = CompositeDisposable()
-
-    fun exportChapter(workbook: Workbook, chapter: Chapter, directory: File, callback:(Workbook, Chapter, Boolean) -> Unit) {
-        lateinit var reviews: ChapterDraftReview
-        try {
-            reviews = draftReviewRepo.readDraftReviewFile(workbook, chapter)
-            writeReviewsToFile(
-                reviews,
-                directory,
-                packageCallback(callback, workbook, chapter)
-            )
-        } catch (_: FileNotFoundException) {
-            handleMissingReview(
-                workbook,
-                chapter,
-                directory,
-                packageCallback(callback, workbook, chapter)
-            )
-        }
-    }
-
-    private fun packageCallback(
-        callback: (Workbook, Chapter, Boolean) -> Unit,
-        workbook: Workbook,
-        chapter: Chapter
-    ): (Boolean) -> Unit = { success ->
-        callback(workbook, chapter, success)
-    }
-
-    private fun handleMissingReview(workbook: Workbook, chapter: Chapter, directory: File, callback:(Boolean) -> Unit) {
-        workbook
-            .source
-            .chapters
-            .filter { it.sort == chapter.sort }
-            .subscribe { sourceChapter ->
-                writeBlankReview(workbook, sourceChapter, directory, callback)
-            }
-            .addTo(disposables)
-    }
-
-    private fun writeBlankReview(workbook: Workbook, sourceChapter: Chapter, directory: File, callback:(Boolean) -> Unit) {
-        questionsRepo.loadQuestionsResource(sourceChapter)
-            .subscribe { questions ->
-                val reviews = ChapterDraftReview(
-                    workbook.source.language.name,
-                    workbook.target.language.name,
-                    workbook.target.title,
-                    sourceChapter.sort,
-                    questions.map { QuestionDraftReview.mapFromQuestion(it) }
-                )
-                writeReviewsToFile(reviews, directory, callback)
-            }
-            .addTo(disposables)
-    }
-
-    private fun writeReviewsToFile(reviews: ChapterDraftReview, directory: File, callback: (Boolean) -> Unit) {
-        val file = getTargetFile(reviews, directory)
-        file.printWriter().use { out ->
-            writeHeaderHTML(reviews, out)
-            writeBodyHTML(reviews, out)
-            writeFooterHTML(out)
-        }
+class ChapterReviewHTMLRenderer {
+    fun writeReviewsToFile(reviews: ChapterDraftReview, out: PrintWriter, callback: (Boolean) -> Unit) {
+        writeHeaderHTML(reviews, out)
+        writeBodyHTML(reviews, out)
+        writeFooterHTML(out)
         callback(true)
-    }
-
-    private fun getTargetFile(reviews: ChapterDraftReview, directory: File): File {
-        val name = "${reviews.source}-${reviews.target}__${reviews.book}_${reviews.chapter}.html"
-        return File("${directory.absolutePath}/$name")
     }
 
     private fun writeHeaderHTML(reviews: ChapterDraftReview, out: PrintWriter) {

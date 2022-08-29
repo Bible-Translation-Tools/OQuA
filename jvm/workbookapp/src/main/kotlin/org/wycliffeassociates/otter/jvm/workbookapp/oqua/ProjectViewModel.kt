@@ -15,7 +15,7 @@ import javax.inject.Inject
 class ProjectViewModel: ViewModel() {
     private val wbDataStore: WorkbookDataStore by inject()
 
-    @Inject lateinit var exportRepo: ExportRepository
+    @Inject lateinit var exportRepo: ChapterReviewExporter
 
     val chapters = observableListOf<Chapter>()
     val exportProgress = SimpleDoubleProperty(1.0)
