@@ -4,17 +4,18 @@ import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.rxkotlin.addTo
 import javafx.beans.property.SimpleBooleanProperty
 import javafx.beans.property.SimpleObjectProperty
+import org.wycliffeassociates.otter.common.data.workbook.Chapter
+import org.wycliffeassociates.otter.common.data.workbook.Workbook
+import org.wycliffeassociates.otter.common.domain.resourcecontainer.projectimportexport.ExportResult
+import org.wycliffeassociates.otter.jvm.workbookapp.di.IDependencyGraphProvider
+import org.wycliffeassociates.otter.jvm.workbookapp.ui.viewmodel.WorkbookDataStore
 import org.wycliffeassociates.otter.common.audio.AudioCue
 import org.wycliffeassociates.otter.common.audio.AudioFile
-import org.wycliffeassociates.otter.common.data.workbook.Chapter
 import org.wycliffeassociates.otter.common.data.workbook.Take
-import org.wycliffeassociates.otter.common.data.workbook.Workbook
 import org.wycliffeassociates.otter.common.device.IAudioPlayer
-import org.wycliffeassociates.otter.jvm.workbookapp.di.IDependencyGraphProvider
 import org.wycliffeassociates.otter.jvm.workbookapp.ui.viewmodel.SettingsViewModel
-import org.wycliffeassociates.otter.jvm.workbookapp.ui.viewmodel.WorkbookDataStore
-import tornadofx.*
 import java.io.FileNotFoundException
+import tornadofx.*
 import javax.inject.Inject
 
 class ChapterViewModel : ViewModel() {
@@ -186,8 +187,12 @@ class ChapterViewModel : ViewModel() {
         if (directory != null) {
             exportComplete.set(false)
             saveDraftReview()
-            exportRepo.exportChapter(workbook, chapter, directory) { _, _, success ->
-                if (success) {
+            exportRepo.exportChapter(
+                workbook,
+                chapter,
+                directory
+            ).subscribe { exportResult ->
+                if (exportResult == ExportResult.SUCCESS) {
                     exportComplete.set(true)
                 }
             }

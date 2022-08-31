@@ -7,6 +7,7 @@ import javafx.beans.property.SimpleBooleanProperty
 import javafx.beans.property.SimpleDoubleProperty
 import org.wycliffeassociates.otter.common.data.workbook.Chapter
 import org.wycliffeassociates.otter.common.data.workbook.Workbook
+import org.wycliffeassociates.otter.common.domain.resourcecontainer.projectimportexport.ExportResult
 import org.wycliffeassociates.otter.jvm.workbookapp.di.IDependencyGraphProvider
 import org.wycliffeassociates.otter.jvm.workbookapp.ui.viewmodel.WorkbookDataStore
 import tornadofx.*
@@ -71,8 +72,8 @@ class ProjectViewModel: ViewModel() {
                     wbDataStore.workbook,
                     chapter,
                     directory
-                ) { _, _, success ->
-                    if (success) {
+                ).subscribe { exportResult ->
+                    if (exportResult == ExportResult.SUCCESS) {
                         completed++
                         exportProgress.set(completed.toDouble() / chapters.size.toDouble())
                         if (completed == chapters.size) {
