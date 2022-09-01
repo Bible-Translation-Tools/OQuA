@@ -18,11 +18,13 @@ class ChapterReviewExporter @Inject constructor (
 
     fun exportChapter(workbook: Workbook, chapter: Chapter, directory: File): Single<ExportResult> {
         return try {
+            /** If you are able to find the draft review file, export it */
             val reviews = draftReviewRepo.readDraftReviewFile(workbook, chapter)
             Single.fromCallable {
                 return@fromCallable executeExport(reviews, directory)
             }
         } catch (_: FileNotFoundException) {
+            /** If you are unable to find it, create an empty one */
             logger.info("Review of ${workbook.target.title} ${chapter.sort} not found. Generating empty review.")
             handleMissingReview(
                 workbook,
@@ -33,18 +35,24 @@ class ChapterReviewExporter @Inject constructor (
     }
 
     private fun handleMissingReview(workbook: Workbook, chapter: Chapter, directory: File): Single<ExportResult> {
+        return getSourceChapter(workbook, chapter)
+            .map { sourceChapter ->
+                writeBlankReview(workbook, sourceChapter, directory).blockingGet()
+            }
+            .onErrorReturnItem(ExportResult.FAILURE)
+    }
+
+    private fun getSourceChapter(workbook: Workbook, chapter: Chapter): Single<Chapter> {
         return workbook
             .source
             .chapters
             .filter { it.sort == chapter.sort }
             .firstOrError()
-            .map { sourceChapter ->
-                writeBlankReview(workbook, sourceChapter, directory).blockingGet()
-            }
     }
 
     private fun writeBlankReview(workbook: Workbook, sourceChapter: Chapter, directory: File): Single<ExportResult> {
-        return questionsRepo.loadQuestionsResource(sourceChapter)
+        return questionsRepo
+            .loadQuestionsResource(sourceChapter)
             .map { questions ->
                 ChapterDraftReview(
                     workbook.source.language.name,
