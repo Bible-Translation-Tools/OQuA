@@ -195,7 +195,7 @@ class ChapterViewModel : ViewModel() {
                 if (exportResult == ExportResult.SUCCESS) {
                     exportComplete.set(true)
                 }
-            }
+            }.addTo(disposables)
         }
     }
 }

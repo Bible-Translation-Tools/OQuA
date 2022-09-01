@@ -80,7 +80,7 @@ class ProjectViewModel: ViewModel() {
                             exportComplete.set(true)
                         }
                     }
-                }
+                }.addTo(disposables)
             }
         }
     }
