@@ -14,7 +14,7 @@ class ChapterReviewExporter @Inject constructor (
     private val questionsRepo: QuestionsRepository
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
-    private var htmlRenderer = ChapterReviewHTMLRenderer()
+    private val htmlRenderer = ChapterReviewHTMLRenderer()
 
     fun exportChapter(workbook: Workbook, chapter: Chapter, directory: File): Single<ExportResult> {
         return try {
