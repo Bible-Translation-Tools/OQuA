@@ -1,5 +1,6 @@
 package org.wycliffeassociates.otter.jvm.workbookapp.oqua
 
+import org.slf4j.LoggerFactory
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.rxkotlin.addTo
 import javafx.beans.property.SimpleBooleanProperty
@@ -26,6 +27,8 @@ class ChapterViewModel : ViewModel() {
     @Inject lateinit var questionsRepo: QuestionsRepository
 
     val settingsViewModel: SettingsViewModel by inject()
+
+    private val logger = LoggerFactory.getLogger(javaClass)
 
     private lateinit var take: Take
     private var totalVerses = 0
@@ -193,6 +196,10 @@ class ChapterViewModel : ViewModel() {
                 directory
             ).subscribe { exportResult ->
                 if (exportResult == ExportResult.SUCCESS) {
+                    exportComplete.set(true)
+                } else {
+                    logger.error("Failed to export ${workbook.target.title} ${chapter.sort}")
+
                     exportComplete.set(true)
                 }
             }.addTo(disposables)
