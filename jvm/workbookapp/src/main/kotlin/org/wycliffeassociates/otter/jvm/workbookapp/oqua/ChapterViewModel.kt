@@ -193,7 +193,8 @@ class ChapterViewModel : ViewModel() {
             exportRepo.exportChapter(
                 workbook,
                 chapter,
-                directory
+                directory,
+                ChapterReviewHTMLRenderer()
             ).subscribe { exportResult ->
                 if (exportResult == ExportResult.SUCCESS) {
                     exportComplete.set(true)

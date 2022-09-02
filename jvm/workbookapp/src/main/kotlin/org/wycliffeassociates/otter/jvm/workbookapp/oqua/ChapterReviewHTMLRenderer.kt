@@ -3,8 +3,8 @@ package org.wycliffeassociates.otter.jvm.workbookapp.oqua
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.projectimportexport.ExportResult
 import java.io.PrintWriter
 
-class ChapterReviewHTMLRenderer {
-    fun writeReviewsToFile(reviews: ChapterDraftReview, out: PrintWriter): ExportResult {
+class ChapterReviewHTMLRenderer: IChapterReviewRenderer {
+    override fun writeReviewsToFile(reviews: ChapterDraftReview, out: PrintWriter): ExportResult {
         writeHeaderHTML(reviews, out)
         writeBodyHTML(reviews, out)
         writeFooterHTML(out)

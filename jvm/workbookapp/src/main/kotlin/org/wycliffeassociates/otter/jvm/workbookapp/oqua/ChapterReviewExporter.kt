@@ -14,14 +14,13 @@ class ChapterReviewExporter @Inject constructor (
     private val questionsRepo: QuestionsRepository
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
-    private val htmlRenderer = ChapterReviewHTMLRenderer()
 
-    fun exportChapter(workbook: Workbook, chapter: Chapter, directory: File): Single<ExportResult> {
+    fun exportChapter(workbook: Workbook, chapter: Chapter, directory: File, renderer: IChapterReviewRenderer): Single<ExportResult> {
         return try {
             /** If you are able to find the draft review file, export it */
             val reviews = draftReviewRepo.readDraftReviewFile(workbook, chapter)
             Single.fromCallable {
-                return@fromCallable executeExport(reviews, directory)
+                return@fromCallable executeExport(reviews, directory, renderer)
             }
         } catch (_: FileNotFoundException) {
             /** If you are unable to find it, create an empty one */
@@ -29,15 +28,16 @@ class ChapterReviewExporter @Inject constructor (
             handleMissingReview(
                 workbook,
                 chapter,
-                directory
+                directory,
+                renderer
             )
         }
     }
 
-    private fun handleMissingReview(workbook: Workbook, chapter: Chapter, directory: File): Single<ExportResult> {
+    private fun handleMissingReview(workbook: Workbook, chapter: Chapter, directory: File, renderer: IChapterReviewRenderer): Single<ExportResult> {
         return getSourceChapter(workbook, chapter)
             .map { sourceChapter ->
-                writeBlankReview(workbook, sourceChapter, directory).blockingGet()
+                writeBlankReview(workbook, sourceChapter, directory, renderer).blockingGet()
             }
             .onErrorReturnItem(ExportResult.FAILURE)
     }
@@ -50,7 +50,7 @@ class ChapterReviewExporter @Inject constructor (
             .firstOrError()
     }
 
-    private fun writeBlankReview(workbook: Workbook, sourceChapter: Chapter, directory: File): Single<ExportResult> {
+    private fun writeBlankReview(workbook: Workbook, sourceChapter: Chapter, directory: File, renderer: IChapterReviewRenderer): Single<ExportResult> {
         return questionsRepo
             .loadQuestionsResource(sourceChapter)
             .map { questions ->
@@ -63,17 +63,17 @@ class ChapterReviewExporter @Inject constructor (
                 )
             }
             .map { reviews ->
-                executeExport(reviews, directory)
+                executeExport(reviews, directory, renderer)
             }
     }
 
-    private fun executeExport(reviews: ChapterDraftReview, directory: File): ExportResult {
+    private fun executeExport(reviews: ChapterDraftReview, directory: File, renderer: IChapterReviewRenderer): ExportResult {
         lateinit var exportResult: ExportResult
 
         val file = getTargetFile(reviews, directory)
         logger.info("Writing ${reviews.book} ${reviews.chapter} into ${file.absolutePath}.")
         file.printWriter().use { out ->
-            exportResult = htmlRenderer.writeReviewsToFile(reviews, out)
+            exportResult = renderer.writeReviewsToFile(reviews, out)
         }
 
         return exportResult

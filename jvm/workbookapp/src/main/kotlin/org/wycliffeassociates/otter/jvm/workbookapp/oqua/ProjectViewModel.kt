@@ -74,7 +74,8 @@ class ProjectViewModel: ViewModel() {
                 exportRepo.exportChapter(
                     wbDataStore.workbook,
                     chapter,
-                    directory
+                    directory,
+                    ChapterReviewHTMLRenderer()
                 ).subscribe { exportResult ->
                     if (exportResult == ExportResult.SUCCESS) {
                         completed++
