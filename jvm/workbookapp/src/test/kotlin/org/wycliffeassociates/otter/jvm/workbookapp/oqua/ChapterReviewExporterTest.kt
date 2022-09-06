@@ -1,7 +1,9 @@
 package org.wycliffeassociates.otter.jvm.workbookapp.oqua
 
 import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.doThrow
 import com.nhaarman.mockitokotlin2.mock
+import io.reactivex.Single
 import org.junit.Assert
 import org.junit.Test
 import org.testfx.api.FxToolkit
@@ -12,6 +14,7 @@ import org.wycliffeassociates.otter.common.data.primitives.Language
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.projectimportexport.ExportResult
 import org.wycliffeassociates.otter.jvm.workbookapp.ui.viewmodel.TestApp
 import java.io.File
+import java.io.FileNotFoundException
 import java.io.PrintWriter
 
 class ChapterReviewExporterTest {
@@ -19,21 +22,7 @@ class ChapterReviewExporterTest {
 
     private lateinit var dir: File
 
-    private val sourceLanguage = mock<Language> {
-        on { name } doReturn "Source"
-    }
-    private val source = mock<Book> {
-        on { language } doReturn sourceLanguage
-    }
-
-    private val targetLanguage = mock<Language> {
-        on { name } doReturn "Target"
-    }
-    private val target = mock<Book> {
-        on { language } doReturn targetLanguage
-        on { title } doReturn "Book"
-    }
-
+    /** Workbook and chapters for successful finds */
     private val workbook = mock<Workbook> {
         on { source } doReturn source
         on { target } doReturn target
@@ -41,6 +30,47 @@ class ChapterReviewExporterTest {
     private val chapter = mock<Chapter> {
         on { sort } doReturn 123
     }
+
+    private val source = mock<Book> {
+        on { language } doReturn sourceLanguage
+    }
+    private val target = mock<Book> {
+        on { language } doReturn targetLanguage
+        on { title } doReturn "Book"
+    }
+
+    private val sourceLanguage = mock<Language> {
+        on { name } doReturn "Source"
+    }
+    private val targetLanguage = mock<Language> {
+        on { name } doReturn "Target"
+    }
+
+    /** Workbook and chapter for unsuccessful finds */
+    private val failedWorkbook = mock<Workbook> {
+        on { source } doReturn failedSource
+        on { target } doReturn failedTarget
+    }
+    private val failedChapter = mock<Chapter> {
+        on { sort } doReturn 0
+    }
+
+    private val failedSource = mock<Book> {
+        on { language } doReturn failedSourceLanguage
+    }
+    private val failedTarget = mock<Book> {
+        on { language } doReturn failedTargetLanguage
+        on { title } doReturn "Missing Book"
+    }
+
+    private val failedSourceLanguage = mock<Language> {
+        on { name } doReturn "Missing Source"
+    }
+    private val failedTargetLanguage = mock<Language> {
+        on { name } doReturn "Missing Target"
+    }
+
+
 
     @Before
     fun setup() {
@@ -74,7 +104,7 @@ class ChapterReviewExporterTest {
                     "a1",
                     1,
                     1,
-                    QuestionResult(explanation = "Words")
+                    QuestionResult(explanation = "words")
                 )
             )
         }
@@ -107,7 +137,7 @@ class ChapterReviewExporterTest {
                     "a1",
                     1,
                     1,
-                    QuestionResult(explanation = "Words")
+                    QuestionResult(explanation = "words")
                 )
             )
         }
@@ -128,12 +158,68 @@ class ChapterReviewExporterTest {
 
         Assert.assertArrayEquals(arrayOf("HELLO", "WORLD"), lines.toTypedArray())
     }
+
+    @Test
+    fun `handles missing draft review`() {
+        val draftReviewRepo = mock<DraftReviewRepository> {
+            on { readDraftReviewFile(failedWorkbook, failedChapter) } doThrow FileNotFoundException()
+        }
+        val questionsRepo = mock<QuestionsRepository> {
+            on { loadQuestionsResource(failedChapter) } doReturn Single.fromCallable {
+                return@fromCallable listOf(
+                    mock<Question> {
+                        on { question } doReturn "missing q1"
+                        on { answer } doReturn "missing a1"
+                        on { start } doReturn 0
+                        on { end } doReturn 0
+                        on { result } doReturn QuestionResult(explanation = "missing words")
+                    }
+                )
+            }
+        }
+
+        val renderer = MockRenderer()
+
+        val exporter = ChapterReviewExporter(draftReviewRepo, questionsRepo)
+        val result = exporter.exportChapter(failedWorkbook, failedChapter, dir, renderer).blockingGet()
+
+        val file = File("testDir/Missing Source-Missing Target__Missing Book_0.html")
+        val lines = file.readLines()
+
+        Assert.assertEquals(ExportResult.SUCCESS, result)
+        Assert.assertTrue(File("testDir/Missing Source-Missing Target__Missing Book_0.html").exists())
+        Assert.assertArrayEquals(
+            arrayOf(
+                "Missing Source -> Missing Target",
+                "Missing Book 0",
+                "missing q1 : missing a1 :: 0 - 0 = UNANSWERED : missing words"
+            ),
+            lines.toTypedArray()
+        )
+    }
 }
 
 class MockRenderer: IChapterReviewRenderer {
     override fun writeReviewsToFile(reviews: ChapterDraftReview, out: PrintWriter): ExportResult {
-        out.println("HELLO")
-        out.println("WORLD")
+        out.println("${reviews.source} -> ${reviews.target}")
+        out.println("${reviews.book} ${reviews.chapter}")
+        reviews.draftReviews.forEach { review ->
+            out.println(
+                "${
+                    review.question
+                } : ${
+                    review.answer
+                } :: ${
+                    review.start
+                } - ${
+                    review.end
+                } = ${
+                    review.result.result
+                } : ${
+                    review.result.explanation
+                }"
+            )
+        }
         return ExportResult.SUCCESS
     }
 }

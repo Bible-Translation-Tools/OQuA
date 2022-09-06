@@ -52,7 +52,12 @@ class ChapterReviewExporter @Inject constructor (
         }
     }
 
-    private fun handleMissingReview(workbook: Workbook, chapter: Chapter, directory: File, renderer: IChapterReviewRenderer): Single<ExportResult> {
+    private fun handleMissingReview(
+        workbook: Workbook,
+        chapter: Chapter,
+        directory: File,
+        renderer: IChapterReviewRenderer
+    ): Single<ExportResult> {
         return getSourceChapter(workbook, chapter)
             .map { sourceChapter ->
                 writeBlankReview(workbook, sourceChapter, directory, renderer).blockingGet()
