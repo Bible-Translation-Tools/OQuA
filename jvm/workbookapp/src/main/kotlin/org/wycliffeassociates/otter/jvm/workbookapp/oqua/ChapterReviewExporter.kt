@@ -15,7 +15,25 @@ class ChapterReviewExporter @Inject constructor (
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
-    fun exportChapter(workbook: Workbook, chapter: Chapter, directory: File, renderer: IChapterReviewRenderer): Single<ExportResult> {
+    fun exportChapter(
+        workbook: Workbook,
+        chapter: Chapter,
+        directory: File,
+        renderer: IChapterReviewRenderer
+    ): Single<ExportResult> {
+        return readDraftOrHandleMissing(workbook, chapter, directory, renderer)
+            .doOnError { error ->
+                logger.error(error.message)
+            }
+            .onErrorReturnItem(ExportResult.FAILURE)
+    }
+
+    private fun readDraftOrHandleMissing(
+        workbook: Workbook,
+        chapter: Chapter,
+        directory: File,
+        renderer: IChapterReviewRenderer
+    ): Single<ExportResult> {
         return try {
             /** If you are able to find the draft review file, export it */
             val reviews = draftReviewRepo.readDraftReviewFile(workbook, chapter)
@@ -39,7 +57,6 @@ class ChapterReviewExporter @Inject constructor (
             .map { sourceChapter ->
                 writeBlankReview(workbook, sourceChapter, directory, renderer).blockingGet()
             }
-            .onErrorReturnItem(ExportResult.FAILURE)
     }
 
     private fun getSourceChapter(workbook: Workbook, chapter: Chapter): Single<Chapter> {
@@ -68,7 +85,7 @@ class ChapterReviewExporter @Inject constructor (
     }
 
     private fun executeExport(reviews: ChapterDraftReview, directory: File, renderer: IChapterReviewRenderer): ExportResult {
-        lateinit var exportResult: ExportResult
+        var exportResult = ExportResult.FAILURE
 
         val file = getTargetFile(reviews, directory)
         logger.info("Writing ${reviews.book} ${reviews.chapter} into ${file.absolutePath}.")

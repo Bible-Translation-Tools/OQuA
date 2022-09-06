@@ -26,7 +26,7 @@ constructor (
     fun writeDraftReviewFile(workbook: Workbook, chapter: Chapter, questions: List<Question>) {
         val accessor = getAccessor(workbook)
         val mapper = jacksonObjectMapper()
-        val dir: File = accessor.getDraftReviewFile()
+        val dir = accessor.getDraftReviewFile()
         val file = File("${dir.absoluteFile}/ch${chapter.sort}.json")
 
         val draftReviews = ChapterDraftReview(
