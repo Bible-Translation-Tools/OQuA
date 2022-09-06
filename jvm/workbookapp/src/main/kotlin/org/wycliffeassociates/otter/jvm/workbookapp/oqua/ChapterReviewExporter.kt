@@ -21,14 +21,14 @@ class ChapterReviewExporter @Inject constructor (
         directory: File,
         renderer: IChapterReviewRenderer
     ): Single<ExportResult> {
-        return readDraftOrHandleMissing(workbook, chapter, directory, renderer)
+        return getDraftReviewAndExport(workbook, chapter, directory, renderer)
             .doOnError { error ->
                 logger.error(error.message)
             }
             .onErrorReturnItem(ExportResult.FAILURE)
     }
 
-    private fun readDraftOrHandleMissing(
+    private fun getDraftReviewAndExport(
         workbook: Workbook,
         chapter: Chapter,
         directory: File,
@@ -67,7 +67,12 @@ class ChapterReviewExporter @Inject constructor (
             .firstOrError()
     }
 
-    private fun writeBlankReview(workbook: Workbook, sourceChapter: Chapter, directory: File, renderer: IChapterReviewRenderer): Single<ExportResult> {
+    private fun writeBlankReview(
+        workbook: Workbook,
+        sourceChapter: Chapter,
+        directory: File,
+        renderer: IChapterReviewRenderer
+    ): Single<ExportResult> {
         return questionsRepo
             .loadQuestionsResource(sourceChapter)
             .map { questions ->
@@ -84,7 +89,11 @@ class ChapterReviewExporter @Inject constructor (
             }
     }
 
-    private fun executeExport(reviews: ChapterDraftReview, directory: File, renderer: IChapterReviewRenderer): ExportResult {
+    private fun executeExport(
+        reviews: ChapterDraftReview,
+        directory: File,
+        renderer: IChapterReviewRenderer
+    ): ExportResult {
         var exportResult = ExportResult.FAILURE
 
         val file = getTargetFile(reviews, directory)
