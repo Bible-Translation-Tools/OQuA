@@ -6,6 +6,7 @@ import org.wycliffeassociates.otter.common.data.workbook.Workbook
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.project.ProjectFilesAccessor
 import org.wycliffeassociates.otter.common.persistence.IDirectoryProvider
 import java.io.File
+import java.io.FileNotFoundException
 import javax.inject.Inject
 
 class DraftReviewRepository
@@ -19,6 +20,10 @@ constructor (
         val mapper = jacksonObjectMapper()
         val dir: File = accessor.getDraftReviewFile()
         val file = File("${dir.absoluteFile}/ch${chapter.sort}.json")
+
+        if (!file.exists()) {
+            throw FileNotFoundException()
+        }
 
         return mapper.readValue(file)
     }
