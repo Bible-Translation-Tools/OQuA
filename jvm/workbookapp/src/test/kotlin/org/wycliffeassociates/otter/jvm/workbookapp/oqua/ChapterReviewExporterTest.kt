@@ -70,7 +70,7 @@ class ChapterReviewExporterTest {
 
     @After
     fun teardown() {
-//        dir.deleteRecursively()
+        dir.deleteRecursively()
 
         FxToolkit.hideStage()
         FxToolkit.cleanupStages()
