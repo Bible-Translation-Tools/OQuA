@@ -1,29 +1,34 @@
 package org.wycliffeassociates.otter.jvm.workbookapp.oqua
 
-import com.github.thomasnield.rxkotlinfx.observeOnFx
-import io.reactivex.Single
+import org.slf4j.LoggerFactory
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.rxkotlin.addTo
 import javafx.beans.property.SimpleBooleanProperty
 import javafx.beans.property.SimpleObjectProperty
+import org.wycliffeassociates.otter.common.data.workbook.Chapter
+import org.wycliffeassociates.otter.common.data.workbook.Workbook
+import org.wycliffeassociates.otter.common.domain.resourcecontainer.projectimportexport.ExportResult
+import org.wycliffeassociates.otter.jvm.workbookapp.di.IDependencyGraphProvider
+import org.wycliffeassociates.otter.jvm.workbookapp.ui.viewmodel.WorkbookDataStore
 import org.wycliffeassociates.otter.common.audio.AudioCue
 import org.wycliffeassociates.otter.common.audio.AudioFile
 import org.wycliffeassociates.otter.common.data.workbook.Take
-import org.wycliffeassociates.otter.common.data.workbook.Workbook
 import org.wycliffeassociates.otter.common.device.IAudioPlayer
-import org.wycliffeassociates.otter.jvm.workbookapp.di.IDependencyGraphProvider
 import org.wycliffeassociates.otter.jvm.workbookapp.ui.viewmodel.SettingsViewModel
-import org.wycliffeassociates.otter.jvm.workbookapp.ui.viewmodel.WorkbookDataStore
-import tornadofx.*
 import java.io.FileNotFoundException
+import tornadofx.*
 import javax.inject.Inject
 
 class ChapterViewModel : ViewModel() {
     private val wbDataStore: WorkbookDataStore by inject()
-@Inject
-    lateinit var draftReviewRepo: DraftReviewRepository
+
+    @Inject lateinit var draftReviewRepo: DraftReviewRepository
+    @Inject lateinit var exportRepo: ChapterReviewExporter
+    @Inject lateinit var questionsRepo: QuestionsRepository
 
     val settingsViewModel: SettingsViewModel by inject()
+
+    private val logger = LoggerFactory.getLogger(javaClass)
 
     private lateinit var take: Take
     private var totalVerses = 0
@@ -34,8 +39,10 @@ class ChapterViewModel : ViewModel() {
     val questions = observableListOf<Question>()
     val audioPlayerProperty = SimpleObjectProperty<IAudioPlayer>()
 
+    val exportComplete = SimpleBooleanProperty(false)
+
     lateinit var workbook: Workbook
-    var chapterNumber = 0
+    lateinit var chapter: Chapter
 
     private val disposables = CompositeDisposable()
 
@@ -45,7 +52,9 @@ class ChapterViewModel : ViewModel() {
 
     fun dock() {
         workbook = wbDataStore.workbook
-        chapterNumber = wbDataStore.chapter.sort
+        chapter = wbDataStore.chapter
+
+        exportComplete.set(false)
 
         loadChapterTake()
         loadAudio()
@@ -92,11 +101,20 @@ class ChapterViewModel : ViewModel() {
     }
 
     private fun loadQuestions() {
-        loadQuestionsResource()
+        wbDataStore
+            .getSourceChapter()
+            .subscribe { chapter ->
+                loadQuestionsFromChapter(chapter)
+            }
+            .addTo(disposables)
+    }
+
+    private fun loadQuestionsFromChapter(chapter: Chapter) {
+        questionsRepo.loadQuestionsResource(chapter)
             .subscribe { newQuestions ->
                 try {
                     draftReviewRepo
-                        .readDraftReviewFile(workbook, chapterNumber)
+                        .readDraftReviewFile(workbook, chapter)
                         .draftReviews
                         .let { draftReviews ->
                             loadDraftReviewIntoQuestions(newQuestions, draftReviews)
@@ -112,24 +130,6 @@ class ChapterViewModel : ViewModel() {
                 questions.setAll(newQuestions)
             }
             .addTo(disposables)
-    }
-
-    private fun loadQuestionsResource(): Single<List<Question>> {
-        return wbDataStore
-            .getSourceChapter()
-            .flatMapObservable { chapter ->
-                chapter.chunks
-            }
-            .flatMap { chunk ->
-                Question.getQuestionsFromChunk(chunk)
-            }
-            .toList()
-            .observeOnFx()
-            .map { questions ->
-                questionsDedup(questions).sortedBy {
-                    it.end
-                }
-            }
     }
 
     private fun loadDraftReviewIntoQuestions(questions: List<Question>, draftReviews: List<QuestionDraftReview>) {
@@ -149,7 +149,7 @@ class ChapterViewModel : ViewModel() {
     }
 
     private fun saveDraftReview() {
-        draftReviewRepo.writeDraftReviewFile(workbook, chapterNumber, questions)
+        draftReviewRepo.writeDraftReviewFile(workbook, chapter, questions)
     }
 
     fun playVerseRange(start: Int, end: Int) {
@@ -182,5 +182,28 @@ class ChapterViewModel : ViewModel() {
 
     private fun getVerseFrame(verse: Int): Int {
         return verseMarkers[verse - 1].location
+    }
+
+    fun exportChapter() {
+        val directory = chooseDirectory(FX.messages["exportChapter"])
+
+        if (directory != null) {
+            exportComplete.set(false)
+            saveDraftReview()
+            exportRepo.exportChapter(
+                workbook,
+                chapter,
+                directory,
+                ChapterReviewHTMLRenderer()
+            ).subscribe { exportResult ->
+                if (exportResult == ExportResult.SUCCESS) {
+                    exportComplete.set(true)
+                } else {
+                    logger.error("Failed to export ${workbook.target.title} ${chapter.sort}")
+
+                    exportComplete.set(true)
+                }
+            }.addTo(disposables)
+        }
     }
 }
