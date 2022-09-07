@@ -1,5 +1,6 @@
 package org.wycliffeassociates.otter.jvm.workbookapp.oqua
 
+import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doAnswer
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.mock
@@ -96,7 +97,7 @@ class ChapterReviewExporterTest {
         }
 
         val draftReviewRepo = mock<DraftReviewRepository> {
-            on { readDraftReviewFile(workbook, chapter) } doReturn reviews
+            on { readDraftReviewFile(any(), any()) } doReturn reviews
         }
         val questionsRepo = mock<QuestionsRepository> {
         }
@@ -129,7 +130,7 @@ class ChapterReviewExporterTest {
         }
 
         val draftReviewRepo = mock<DraftReviewRepository> {
-            on { readDraftReviewFile(workbook, chapter) } doReturn reviews
+            on { readDraftReviewFile(any(), any()) } doReturn reviews
         }
         val questionsRepo = mock<QuestionsRepository> {
         }
@@ -155,12 +156,12 @@ class ChapterReviewExporterTest {
     @Test
     fun `handles missing draft review`() {
         val draftReviewRepo = mock<DraftReviewRepository> {
-            on { readDraftReviewFile(failedWorkbook, failedChapter) } doAnswer {
+            on { readDraftReviewFile(any(), any()) } doAnswer {
                 _ -> throw FileNotFoundException("Mock File Not Found")
             }
         }
         val questionsRepo = mock<QuestionsRepository> {
-            on { loadQuestionsResource(failedChapter) } doReturn Single.fromCallable {
+            on { loadQuestionsResource(any()) } doReturn Single.fromCallable {
                 return@fromCallable listOf(
                     mock<Question> {
                         on { question } doReturn "missing q1"

@@ -100,7 +100,9 @@ class ChapterReviewHTMLRendererTest {
             |        <td>Words</td>
             |      </tr>
             |$footer
-            |""".trimMargin(), output.toString())
+            |""".trimMargin(),
+            output.toString()
+        )
     }
 
     @Test
