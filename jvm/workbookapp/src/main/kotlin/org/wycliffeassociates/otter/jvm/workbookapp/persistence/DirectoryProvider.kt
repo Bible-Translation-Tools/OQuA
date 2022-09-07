@@ -73,7 +73,8 @@ class DirectoryProvider(
             }
         }
 
-        pathComponents.add(appName)
+//        pathComponents.add(appName)
+        pathComponents.add("OQuA")
 
         if (appendedPath.isNotEmpty()) pathComponents.add(appendedPath)
 

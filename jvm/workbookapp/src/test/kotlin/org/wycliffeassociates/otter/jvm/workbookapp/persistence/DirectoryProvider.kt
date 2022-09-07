@@ -54,11 +54,11 @@ class TestDirectoryProvider {
 
     val APPDATA_TESTS_TABLE = listOf<TestCase>(
         macParams + (EXPECT to
-                "/Users/edvin/Library/Application Support/Orature/database"),
+                "/Users/edvin/Library/Application Support/OQuA/database"),
         linuxParams + (EXPECT to
-                "/home/edvin/.config/Orature/database"),
+                "/home/edvin/.config/OQuA/database"),
         winParams + (EXPECT to
-                "C:\\Users\\Edvin\\AppData\\Roaming\\Orature\\database")
+                "C:\\Users\\Edvin\\AppData\\Roaming\\OQuA\\database")
     )
 
     val USERDATA_TESTS_TABLE = listOf<TestCase>(
@@ -72,20 +72,20 @@ class TestDirectoryProvider {
 
     val USERIMAGE_TESTS_TABLE = listOf<TestCase>(
         macParams + (EXPECT to
-                "/Users/edvin/Library/Application Support/Orature/users/images"),
+                "/Users/edvin/Library/Application Support/OQuA/users/images"),
         linuxParams + (EXPECT to
-                "/home/edvin/.config/Orature/users/images"),
+                "/home/edvin/.config/OQuA/users/images"),
         winParams + (EXPECT to
-                "C:\\Users\\Edvin\\AppData\\Roaming\\Orature\\users\\images")
+                "C:\\Users\\Edvin\\AppData\\Roaming\\OQuA\\users\\images")
     )
 
     val USERAUDIO_TESTS_TABLE = listOf<TestCase>(
         macParams + (EXPECT to
-                "/Users/edvin/Library/Application Support/Orature/users/audio"),
+                "/Users/edvin/Library/Application Support/OQuA/users/audio"),
         linuxParams + (EXPECT to
-                "/home/edvin/.config/Orature/users/audio"),
+                "/home/edvin/.config/OQuA/users/audio"),
         winParams + (EXPECT to
-                "C:\\Users\\Edvin\\AppData\\Roaming\\Orature\\users\\audio")
+                "C:\\Users\\Edvin\\AppData\\Roaming\\OQuA\\users\\audio")
     )
 
     private fun buildDirectoryProvider(testCase: TestCase) = DirectoryProvider(
