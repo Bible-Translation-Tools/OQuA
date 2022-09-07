@@ -63,12 +63,17 @@ class InitializeProjects @Inject constructor(
                 log.info("$name up to date with version: $version")
             }
 
+            /**
+             * This is commented out so that it will always update the database.
+             * This is a hot fix, and it will be noted in JIRA as something to come back to.
+             *
             if (fetchProjects().isEmpty()) {
+             */
                 log.info("Importing projects...")
 
                 val dir = directoryProvider.getUserDataDirectory("/")
                 importProjects(dir)
-            }
+            /** } */
         }
     }
 
