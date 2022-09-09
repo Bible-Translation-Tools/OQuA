@@ -53,6 +53,8 @@ import org.wycliffeassociates.otter.jvm.workbookapp.ui.viewmodel.VerbalizeViewMo
 import org.wycliffeassociates.otter.common.persistence.repositories.WorkbookRepository
 import org.wycliffeassociates.otter.jvm.device.ConfigureAudioSystem
 import org.wycliffeassociates.otter.jvm.workbookapp.oqua.ChapterViewModel
+import org.wycliffeassociates.otter.jvm.workbookapp.oqua.ProjectViewModel
+import org.wycliffeassociates.otter.jvm.workbookapp.oqua.ImportViewModel
 
 @Component(
     modules = [
@@ -85,6 +87,8 @@ interface AppDependencyGraph {
     fun inject(viewModel: ChunkingViewModel)
     fun inject(viewModel: ExportChapterViewModel)
     fun inject(viewModel: ChapterViewModel)
+    fun inject(viewModel: ProjectViewModel)
+    fun inject(viewModel: ImportViewModel)
     fun injectDatabase(): AppDatabase
     fun injectDirectoryProvider(): IDirectoryProvider
     fun injectAppPreferencesRepository(): IAppPreferencesRepository

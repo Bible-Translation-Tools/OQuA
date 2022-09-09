@@ -12,8 +12,6 @@ class OQuAWorkspace : Workspace() {
 
     override fun onBeforeShow() {
         super.onDock()
-        workspace.dock(find<HomeView>())
-
-        workspace.header.replaceWith(find<NavBar>().root)
+        workspace.dock(find<LoadingView>())
     }
 }

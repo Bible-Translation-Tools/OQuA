@@ -49,7 +49,10 @@ class TCardListCellFragment: ListCellFragment<TranslationCard>() {
                     hostServices.showDocument(questionsURLProperty.value)
                 }
             }
-            text("Then open Orature and import the zip file you just downloaded.")
+            text("Then import that file using the button above.")
+            text("You will probably have to restart OQuA after doing so.") {
+                addClass("oqua-missing-tq-header")
+            }
         }
 
         listview<Workbook> {
