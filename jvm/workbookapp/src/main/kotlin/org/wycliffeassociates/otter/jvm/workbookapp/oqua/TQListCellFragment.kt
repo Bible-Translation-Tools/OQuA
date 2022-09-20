@@ -60,14 +60,14 @@ class TQListCellFragment: ListCellFragment<Question>() {
         }
 
         hbox(5) {
-            correctButton = togglebutton("Correct", toggleGroup) {
+            correctButton = togglebutton("Approved", toggleGroup) {
                 action {
-                    item.result.result = ResultValue.CORRECT
+                    item.result.result = ResultValue.APPROVED
                 }
             }
-            incorrectButton = togglebutton("Incorrect", toggleGroup) {
+            incorrectButton = togglebutton("Needs work", toggleGroup) {
                 action {
-                    item.result.result = ResultValue.INCORRECT
+                    item.result.result = ResultValue.NEEDS_WORK
                 }
             }
             invalidButton = togglebutton("Invalid Question", toggleGroup) {
@@ -78,25 +78,22 @@ class TQListCellFragment: ListCellFragment<Question>() {
 
             itemProperty.onChange {
                 when (it?.result?.result) {
-                    ResultValue.CORRECT -> toggleGroup.selectToggle(correctButton)
-                    ResultValue.INCORRECT -> toggleGroup.selectToggle(incorrectButton)
+                    ResultValue.APPROVED -> toggleGroup.selectToggle(correctButton)
+                    ResultValue.NEEDS_WORK -> toggleGroup.selectToggle(incorrectButton)
                     ResultValue.INVALID_QUESTION -> toggleGroup.selectToggle(invalidButton)
                     ResultValue.UNANSWERED -> toggleGroup.selectToggle(null)
                 }
             }
+        }
 
-            textfield {
-                hgrow = Priority.ALWAYS
+        textfield {
+            hgrow = Priority.ALWAYS
 
-                visibleWhen(invalidButton.selectedProperty())
-                managedWhen(visibleProperty())
-
-                itemProperty.onChange {
-                    text = it?.result?.explanation
-                }
-                textProperty().onChange {
-                    item?.result?.explanation = it ?: ""
-                }
+            itemProperty.onChange {
+                text = it?.result?.explanation
+            }
+            textProperty().onChange {
+                item?.result?.explanation = it ?: ""
             }
         }
     }

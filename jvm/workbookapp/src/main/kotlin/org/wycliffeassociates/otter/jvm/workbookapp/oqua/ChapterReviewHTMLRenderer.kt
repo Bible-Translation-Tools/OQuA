@@ -49,8 +49,8 @@ class ChapterReviewHTMLRenderer: IChapterReviewRenderer {
 
         reviews.draftReviews.forEach { review ->
             when (review.result.result) {
-                ResultValue.CORRECT -> correct++
-                ResultValue.INCORRECT -> incorrect++
+                ResultValue.APPROVED -> correct++
+                ResultValue.NEEDS_WORK -> incorrect++
                 ResultValue.INVALID_QUESTION -> invalid++
                 ResultValue.UNANSWERED -> unanswered++
             }
@@ -132,8 +132,8 @@ class ChapterReviewHTMLRenderer: IChapterReviewRenderer {
 
     private fun getResultCircle(review: QuestionDraftReview): String {
         val color = when (review.result.result) {
-            ResultValue.CORRECT -> "green"
-            ResultValue.INCORRECT -> "red"
+            ResultValue.APPROVED -> "green"
+            ResultValue.NEEDS_WORK -> "red"
             ResultValue.INVALID_QUESTION -> "yellow"
             else -> "white"
         }
