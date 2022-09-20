@@ -7,6 +7,8 @@ import org.wycliffeassociates.otter.common.data.workbook.Workbook
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.projectimportexport.ExportResult
 import java.io.File
 import java.io.FileNotFoundException
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
 class ChapterReviewExporter @Inject constructor (
@@ -111,7 +113,9 @@ class ChapterReviewExporter @Inject constructor (
     }
 
     private fun getTargetFile(reviews: ChapterDraftReview, directory: File): File {
-        val name = "${reviews.source}-${reviews.target}__${reviews.book}_${reviews.chapter}.html"
+        val formatter = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")
+        val timestamp = LocalDateTime.now().format(formatter)
+        val name = "${reviews.source}-${reviews.target}__${reviews.book}_${reviews.chapter}__${timestamp}.html"
         return File("${directory.absolutePath}/$name")
     }
 }
