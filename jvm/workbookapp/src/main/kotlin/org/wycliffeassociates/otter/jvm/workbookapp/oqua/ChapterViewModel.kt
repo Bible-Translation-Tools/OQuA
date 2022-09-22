@@ -30,7 +30,7 @@ class ChapterViewModel : ViewModel() {
 
     private val logger = LoggerFactory.getLogger(javaClass)
 
-    private lateinit var take: Take
+    private val takeProperty = SimpleObjectProperty<Take>()
     private var totalVerses = 0
     private var totalFrames = 0
     private lateinit var verseMarkers: List<AudioCue>
@@ -57,8 +57,6 @@ class ChapterViewModel : ViewModel() {
         exportComplete.set(false)
 
         loadChapterTake()
-        loadAudio()
-        loadVerseMarkers()
         loadQuestions()
     }
 
@@ -69,35 +67,41 @@ class ChapterViewModel : ViewModel() {
     }
 
     private fun loadChapterTake() {
-        take = wbDataStore
+        wbDataStore
             .chapter
-            .audio
-            .selected
-            .value
-            ?.value
-            ?: throw NullPointerException("ChapterViewModel: Could not find selected chapter take")
+            .getAudio()
+            .subscribe { take ->
+                takeProperty.set(take)
+                loadAudio()
+                loadVerseMarkers()
+            }
+            .addTo(disposables)
     }
 
     private fun loadAudio() {
-        val audioPlayer = (app as IDependencyGraphProvider).dependencyGraph.injectPlayer()
-        audioPlayer.load(take.file)
-        audioPlayerProperty.set(audioPlayer)
-        totalFrames = audioPlayerProperty.value.getDurationInFrames()
+        takeProperty.value?.let { take ->
+            val audioPlayer = (app as IDependencyGraphProvider).dependencyGraph.injectPlayer()
+            audioPlayer.load(take.file)
+            audioPlayerProperty.set(audioPlayer)
+            totalFrames = audioPlayerProperty.value.getDurationInFrames()
+        }
     }
 
     private fun loadVerseMarkers() {
-        wbDataStore
-            .getSourceChapter()
-            .toSingle()
-            .flatMap { it.chunks.count() }
-            .map { it.toInt() }
-            .subscribe { numberOfSourceChunks ->
-                totalVerses = numberOfSourceChunks
-                verseMarkers = AudioFile(take.file).metadata.getCues()
+        takeProperty.value?.let { take ->
+            wbDataStore
+                .getSourceChapter()
+                .toSingle()
+                .flatMap { it.chunks.count() }
+                .map { it.toInt() }
+                .subscribe { numberOfSourceChunks ->
+                    totalVerses = numberOfSourceChunks
+                    verseMarkers = AudioFile(take.file).metadata.getCues()
 
-                hasAllMarkers.set(verseMarkers.size == totalVerses)
-            }
-            .addTo(disposables)
+                    hasAllMarkers.set(verseMarkers.size == totalVerses)
+                }
+                .addTo(disposables)
+        }
     }
 
     private fun loadQuestions() {
@@ -153,15 +157,17 @@ class ChapterViewModel : ViewModel() {
     }
 
     fun playVerseRange(start: Int, end: Int) {
-        if (hasAllMarkers.value) {
+        if (takeProperty.value != null &&
+            audioPlayerProperty.value != null &&
+            hasAllMarkers.value
+        ) {
             if ((start in 1..totalVerses) &&
                 (end in start..totalVerses)
             ) {
-
                 val startFrame = getVerseFrame(start)
                 val endFrame = getVerseEndFrame(end)
 
-                audioPlayerProperty.value.loadSection(take.file, startFrame, endFrame)
+                audioPlayerProperty.value.loadSection(takeProperty.value.file, startFrame, endFrame)
                 audioPlayerProperty.value.seek(0)
                 audioPlayerProperty.value.play()
             } else {

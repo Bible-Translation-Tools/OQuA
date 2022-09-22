@@ -18,7 +18,9 @@
  */
 package org.wycliffeassociates.otter.common.data.workbook
 
+import io.reactivex.Maybe
 import io.reactivex.Observable
+import io.reactivex.Single
 import io.reactivex.rxkotlin.cast
 import org.wycliffeassociates.otter.common.data.primitives.ContentType
 import org.wycliffeassociates.otter.common.data.primitives.MimeType
@@ -62,9 +64,24 @@ data class Chapter(
         }
     }
 
-    fun hasAudio(): Boolean =
-        audio
+    fun getAudio(): Maybe<Take> {
+        val selected = audio
             .selected
             .value
-            ?.value != null
+            ?.value
+        val take = audio
+            .takes
+            .toList()
+            .map { takes ->
+                selected ?: takes.maxByOrNull { take ->
+                    take.createdTimestamp
+                }
+            }
+            .flatMapMaybe {
+                Maybe.just(it)
+            }
+        return take
+    }
+
+    fun hasAudio(): Single<Boolean> = getAudio().isEmpty.map { it.not() }
 }

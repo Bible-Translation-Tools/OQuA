@@ -47,7 +47,7 @@ class ProjectViewModel: ViewModel() {
         workbook
             .target
             .chapters
-            .filter { it.hasAudio() }
+            .filter { it.hasAudio().blockingGet() }
             .toList()
             .map { chapters ->
                 chapters.sortedBy { it.sort }

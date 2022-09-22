@@ -66,8 +66,6 @@ class HomeViewModel: ViewModel() {
         return workbook
             .target
             .chapters
-            .any { chapter ->
-                chapter.hasAudio()
-            }
+            .any { it.hasAudio().blockingGet() }
     }
 }
