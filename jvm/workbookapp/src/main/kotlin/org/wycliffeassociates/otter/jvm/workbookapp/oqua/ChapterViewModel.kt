@@ -157,19 +157,26 @@ class ChapterViewModel : ViewModel() {
             if ((start in 1..totalVerses) &&
                 (end in start..totalVerses)
             ) {
-
                 val startFrame = getVerseFrame(start)
                 val endFrame = getVerseEndFrame(end)
 
-                audioPlayerProperty.value.loadSection(take.file, startFrame, endFrame)
-                audioPlayerProperty.value.seek(0)
-                audioPlayerProperty.value.play()
+                if (sectionIsPlaying(startFrame, endFrame)) {
+                    audioPlayerProperty.value.pause()
+                } else {
+                    audioPlayerProperty.value.loadSection(take.file, startFrame, endFrame)
+                    audioPlayerProperty.value.seek(0)
+                    audioPlayerProperty.value.play()
+                }
             } else {
                 throw IndexOutOfBoundsException(
                     "ChapterViewModel: Verse range [$start - $end] does not exist in $totalVerses verses"
                 )
             }
         }
+    }
+
+    private fun getVerseFrame(verse: Int): Int {
+        return verseMarkers[verse - 1].location
     }
 
     private fun getVerseEndFrame(verse: Int): Int {
@@ -180,9 +187,11 @@ class ChapterViewModel : ViewModel() {
         }
     }
 
-    private fun getVerseFrame(verse: Int): Int {
-        return verseMarkers[verse - 1].location
-    }
+    private fun sectionIsPlaying(startFrame: Int, endFrame: Int): Boolean = (
+        (audioPlayerProperty.value.frameStart == startFrame) &&
+        (audioPlayerProperty.value.frameEnd == endFrame) &&
+        (audioPlayerProperty.value.isPlaying())
+    )
 
     fun exportChapter() {
         val directory = chooseDirectory(FX.messages["exportChapter"])
