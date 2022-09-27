@@ -18,6 +18,8 @@ import org.wycliffeassociates.otter.jvm.workbookapp.ui.viewmodel.TestApp
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.PrintWriter
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 
 class ChapterReviewExporterTest {
@@ -108,7 +110,10 @@ class ChapterReviewExporterTest {
         val result = exporter.exportChapter(workbook, chapter, dir, renderer).blockingGet()
 
         Assert.assertEquals(ExportResult.SUCCESS, result)
-        Assert.assertTrue(File("testDir/Source-Target__Book_123.html").exists())
+
+        val formatter = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")
+        val timestamp = LocalDateTime.now().format(formatter)
+        Assert.assertTrue(File("testDir/Source-Target__Book_123__${timestamp}.html").exists())
     }
 
     @Test
