@@ -145,7 +145,9 @@ class ChapterReviewExporterTest {
         val exporter = ChapterReviewExporter(draftReviewRepo, questionsRepo)
         exporter.exportChapter(workbook, chapter, dir, renderer).blockingGet()
 
-        val file = File("testDir/Source-Target__Book_123.html")
+        val formatter = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")
+        val timestamp = LocalDateTime.now().format(formatter)
+        val file = File("testDir/Source-Target__Book_123__${timestamp}.html")
         val lines = file.readLines()
 
         Assert.assertArrayEquals(
@@ -187,11 +189,12 @@ class ChapterReviewExporterTest {
         val exporter = ChapterReviewExporter(draftReviewRepo, questionsRepo)
         val result = exporter.exportChapter(failedWorkbook, failedChapter, dir, renderer).blockingGet()
 
-        val file = File("testDir/Missing Source-Missing Target__Missing Book_0.html")
+        val formatter = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")
+        val timestamp = LocalDateTime.now().format(formatter)
+        val file = File("testDir/Missing Source-Missing Target__Missing Book_0__${timestamp}.html")
         val lines = file.readLines()
 
         Assert.assertEquals(ExportResult.SUCCESS, result)
-        Assert.assertTrue(File("testDir/Missing Source-Missing Target__Missing Book_0.html").exists())
         Assert.assertArrayEquals(
             arrayOf(
                 "Missing Source -> Missing Target",
