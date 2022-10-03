@@ -18,6 +18,8 @@ import org.wycliffeassociates.otter.jvm.workbookapp.ui.viewmodel.TestApp
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.PrintWriter
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 
 class ChapterReviewExporterTest {
@@ -103,16 +105,21 @@ class ChapterReviewExporterTest {
         }
 
         val renderer = MockRenderer()
-
         val exporter = ChapterReviewExporter(draftReviewRepo, questionsRepo)
-        val result = exporter.exportChapter(workbook, chapter, dir, renderer).blockingGet()
+        val directory = File("testDir")
 
+        Assert.assertEquals(directory.listFiles()?.size ?: 0, 0)
+        val result = exporter.exportChapter(workbook, chapter, dir, renderer).blockingGet()
         Assert.assertEquals(ExportResult.SUCCESS, result)
-        Assert.assertTrue(File("testDir/Source-Target__Book_123.html").exists())
+        Assert.assertEquals(directory.listFiles()!!.size, 1)
+        Assert.assertEquals(
+            directory.listFiles()!![0].name.substring(0, 25),
+            "Source-Target__Book_123__"
+        )
     }
 
     @Test
-    fun `writes correct data to file`() {
+    fun `writes data to the file`() {
         val reviews = mock<ChapterDraftReview> {
             on { source } doReturn "Source"
             on { target } doReturn "Target"
@@ -140,7 +147,7 @@ class ChapterReviewExporterTest {
         val exporter = ChapterReviewExporter(draftReviewRepo, questionsRepo)
         exporter.exportChapter(workbook, chapter, dir, renderer).blockingGet()
 
-        val file = File("testDir/Source-Target__Book_123.html")
+        val file = File("testDir").listFiles()!![0]
         val lines = file.readLines()
 
         Assert.assertArrayEquals(
@@ -154,7 +161,7 @@ class ChapterReviewExporterTest {
     }
 
     @Test
-    fun `handles missing draft review`() {
+    fun `handles missing draft review and still creates file`() {
         val draftReviewRepo = mock<DraftReviewRepository> {
             on { readDraftReviewFile(any(), any()) } doAnswer {
                 _ -> throw FileNotFoundException("Mock File Not Found")
@@ -182,11 +189,12 @@ class ChapterReviewExporterTest {
         val exporter = ChapterReviewExporter(draftReviewRepo, questionsRepo)
         val result = exporter.exportChapter(failedWorkbook, failedChapter, dir, renderer).blockingGet()
 
-        val file = File("testDir/Missing Source-Missing Target__Missing Book_0.html")
+        val formatter = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")
+        val timestamp = LocalDateTime.now().format(formatter)
+        val file = File("testDir/Missing Source-Missing Target__Missing Book_0__${timestamp}.html")
         val lines = file.readLines()
 
         Assert.assertEquals(ExportResult.SUCCESS, result)
-        Assert.assertTrue(File("testDir/Missing Source-Missing Target__Missing Book_0.html").exists())
         Assert.assertArrayEquals(
             arrayOf(
                 "Missing Source -> Missing Target",
