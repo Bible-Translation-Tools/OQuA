@@ -118,21 +118,21 @@ class ChapterReviewHTMLRendererTest {
                     "a1",
                     1,
                     1,
-                    QuestionResult(ResultValue.CORRECT, "")
+                    QuestionResult(ResultValue.APPROVED, "")
                 ),
                 QuestionDraftReview(
                     "q2",
                     "a2",
                     2,
                     2,
-                    QuestionResult(ResultValue.CORRECT, "")
+                    QuestionResult(ResultValue.APPROVED, "")
                 ),
                 QuestionDraftReview(
                     "q3",
                     "a3",
                     3,
                     3,
-                    QuestionResult(ResultValue.INCORRECT, "")
+                    QuestionResult(ResultValue.NEEDS_WORK, "")
                 ),
                 QuestionDraftReview(
                     "q4",

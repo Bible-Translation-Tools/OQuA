@@ -1,8 +1,8 @@
 package org.wycliffeassociates.otter.jvm.workbookapp.oqua
 
 enum class ResultValue {
-    CORRECT,
-    INCORRECT,
+    APPROVED,
+    NEEDS_WORK,
     INVALID_QUESTION,
     UNANSWERED
 }
