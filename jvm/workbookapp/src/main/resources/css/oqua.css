@@ -5,14 +5,38 @@
     -fx-border-color: darkcyan;
 }
 
-.toggle-button {
+.oqua-btn-approved {
+    -fx-background-color: linear-gradient(to bottom, lightgreen, green);
+    -fx-background-radius: 5px;
+    -fx-border-radius: 5px;
+    -fx-border-color: darkgreen;
+}
+
+.oqua-btn-approved:selected {
+    -fx-background-color: linear-gradient(to top, lightgreen, darkgreen);
+    -fx-border-color: darkgreen;
+}
+
+.oqua-btn-needs-work {
+    -fx-background-color: linear-gradient(to bottom, lightyellow, yellow);
+    -fx-background-radius: 5px;
+    -fx-border-radius: 5px;
+    -fx-border-color: brown;
+}
+
+.oqua-btn-needs-work:selected {
+    -fx-background-color: linear-gradient(to top, lightyellow, brown);
+    -fx-border-color: brown;
+}
+
+.oqua-btn-invalid {
     -fx-background-color: linear-gradient(to bottom, lightcyan, cyan);
     -fx-background-radius: 5px;
     -fx-border-radius: 5px;
     -fx-border-color: darkcyan;
 }
 
-.toggle-button:selected {
+.oqua-btn-invalid:selected {
     -fx-background-color: linear-gradient(to top, lightcyan, darkcyan);
     -fx-border-color: blue;
 }

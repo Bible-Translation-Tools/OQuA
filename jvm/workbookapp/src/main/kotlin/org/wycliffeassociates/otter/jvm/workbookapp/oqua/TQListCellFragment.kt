@@ -43,11 +43,23 @@ class TQListCellFragment: ListCellFragment<Question>() {
     override val root = vbox(5) {
         addClass("oqua-tq-card")
 
-        button(verseProperty) {
-            action {
-                itemProperty.value?.let {
-                    viewModel.playVerseRange(it.start, it.end)
+        hbox(5) {
+            text(verseProperty)
+            button("Play/Pause") {
+                action {
+                    itemProperty.value?.let {
+                        viewModel.playVerseRange(it.start, it.end)
+                    }
                 }
+            }
+            button("Restart") {
+                action {
+                    itemProperty.value?.let {
+                        viewModel.playVerseRangeFromBeginning(it.start, it.end)
+                    }
+                }
+                //visibleWhen(restartProperty)
+                managedWhen(visibleProperty())
             }
         }
 
@@ -61,16 +73,19 @@ class TQListCellFragment: ListCellFragment<Question>() {
 
         hbox(5) {
             correctButton = togglebutton("Approved", toggleGroup) {
+                addClass("oqua-btn-approved")
                 action {
                     item.result.result = ResultValue.APPROVED
                 }
             }
             incorrectButton = togglebutton("Needs work", toggleGroup) {
+                addClass("oqua-btn-needs-work")
                 action {
                     item.result.result = ResultValue.NEEDS_WORK
                 }
             }
             invalidButton = togglebutton("Invalid Question", toggleGroup) {
+                addClass("oqua-btn-invalid")
                 action {
                     item.result.result = ResultValue.INVALID_QUESTION
                 }

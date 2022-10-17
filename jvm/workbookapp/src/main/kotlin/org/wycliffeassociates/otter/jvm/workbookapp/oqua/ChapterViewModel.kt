@@ -152,6 +152,17 @@ class ChapterViewModel : ViewModel() {
         draftReviewRepo.writeDraftReviewFile(workbook, chapter, questions)
     }
 
+    fun playVerseRangeFromBeginning(start: Int, end: Int) {
+        if (hasAllMarkers.value) {
+            val startFrame = getVerseFrame(start)
+            val endFrame = getVerseEndFrame(end)
+
+            audioPlayerProperty.value.loadSection(take.file, startFrame, endFrame)
+            audioPlayerProperty.value.seek(0)
+            audioPlayerProperty.value.play()
+        }
+    }
+
     fun playVerseRange(start: Int, end: Int) {
         if (hasAllMarkers.value) {
             if ((start in 1..totalVerses) &&
@@ -160,12 +171,10 @@ class ChapterViewModel : ViewModel() {
                 val startFrame = getVerseFrame(start)
                 val endFrame = getVerseEndFrame(end)
 
-                if (sectionIsPlaying(startFrame, endFrame)) {
-                    audioPlayerProperty.value.pause()
+                if (sectionIsLoaded(startFrame, endFrame)) {
+                    audioPlayerProperty.value.toggle()
                 } else {
-                    audioPlayerProperty.value.loadSection(take.file, startFrame, endFrame)
-                    audioPlayerProperty.value.seek(0)
-                    audioPlayerProperty.value.play()
+                    playVerseRangeFromBeginning(start, end)
                 }
             } else {
                 throw IndexOutOfBoundsException(
@@ -187,10 +196,9 @@ class ChapterViewModel : ViewModel() {
         }
     }
 
-    private fun sectionIsPlaying(startFrame: Int, endFrame: Int): Boolean = (
+    fun sectionIsLoaded(startFrame: Int, endFrame: Int): Boolean = (
         (audioPlayerProperty.value.frameStart == startFrame) &&
-        (audioPlayerProperty.value.frameEnd == endFrame) &&
-        (audioPlayerProperty.value.isPlaying())
+        (audioPlayerProperty.value.frameEnd == endFrame)
     )
 
     fun exportChapter() {
