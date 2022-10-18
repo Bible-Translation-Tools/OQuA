@@ -4,6 +4,7 @@ import org.slf4j.LoggerFactory
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.rxkotlin.addTo
 import javafx.beans.property.SimpleBooleanProperty
+import javafx.beans.property.SimpleIntegerProperty
 import javafx.beans.property.SimpleObjectProperty
 import org.wycliffeassociates.otter.common.data.workbook.Chapter
 import org.wycliffeassociates.otter.common.data.workbook.Workbook
@@ -38,6 +39,8 @@ class ChapterViewModel : ViewModel() {
 
     val questions = observableListOf<Question>()
     val audioPlayerProperty = SimpleObjectProperty<IAudioPlayer>()
+    val startProperty = SimpleIntegerProperty()
+    val endProperty = SimpleIntegerProperty()
 
     val exportComplete = SimpleBooleanProperty(false)
 
@@ -154,6 +157,9 @@ class ChapterViewModel : ViewModel() {
 
     fun playVerseRangeFromBeginning(start: Int, end: Int) {
         if (hasAllMarkers.value) {
+            startProperty.set(start)
+            endProperty.set(end)
+
             val startFrame = getVerseFrame(start)
             val endFrame = getVerseEndFrame(end)
 

@@ -27,6 +27,17 @@ class TQListCellFragment: ListCellFragment<Question>() {
         },
         itemProperty
     )
+    private val restartProperty = Bindings.createBooleanBinding(
+        {
+            itemProperty.value?.let {
+                (it.start == viewModel.startProperty.value) &&
+                (it.end == viewModel.endProperty.value)
+            }
+        },
+        itemProperty,
+        viewModel.startProperty,
+        viewModel.endProperty
+    )
 
     lateinit var correctButton: ToggleButton
     lateinit var incorrectButton: ToggleButton
@@ -58,7 +69,7 @@ class TQListCellFragment: ListCellFragment<Question>() {
                         viewModel.playVerseRangeFromBeginning(it.start, it.end)
                     }
                 }
-                //visibleWhen(restartProperty)
+                visibleWhen(restartProperty)
                 managedWhen(visibleProperty())
             }
         }
