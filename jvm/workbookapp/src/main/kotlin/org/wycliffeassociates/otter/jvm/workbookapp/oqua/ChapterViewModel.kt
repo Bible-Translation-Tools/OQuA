@@ -67,6 +67,8 @@ class ChapterViewModel : ViewModel() {
 
     fun undock() {
         closeAudio()
+        startProperty.set(-1)
+        endProperty.set(-1)
         saveDraftReview()
         disposables.clear()
     }

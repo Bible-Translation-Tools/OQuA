@@ -56,21 +56,26 @@ class TQListCellFragment: ListCellFragment<Question>() {
 
         hbox(5) {
             text(verseProperty)
-            button("Play/Pause") {
-                action {
-                    itemProperty.value?.let {
-                        viewModel.playVerseRange(it.start, it.end)
-                    }
-                }
-            }
-            button("Restart") {
-                action {
-                    itemProperty.value?.let {
-                        viewModel.playVerseRangeFromBeginning(it.start, it.end)
-                    }
-                }
-                visibleWhen(restartProperty)
+            hbox(5) {
+                visibleWhen(viewModel.hasAllMarkers)
                 managedWhen(visibleProperty())
+
+                button("Play/Pause") {
+                    action {
+                        itemProperty.value?.let {
+                            viewModel.playVerseRange(it.start, it.end)
+                        }
+                    }
+                }
+                button("Restart") {
+                    action {
+                        itemProperty.value?.let {
+                            viewModel.playVerseRangeFromBeginning(it.start, it.end)
+                        }
+                    }
+                    visibleWhen(restartProperty)
+                    managedWhen(visibleProperty())
+                }
             }
         }
 
