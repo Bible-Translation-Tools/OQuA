@@ -30,13 +30,11 @@ class TQListCellFragment: ListCellFragment<Question>() {
     private val restartProperty = Bindings.createBooleanBinding(
         {
             itemProperty.value?.let {
-                (it.start == viewModel.startProperty.value) &&
-                (it.end == viewModel.endProperty.value)
-            }
+                viewModel.sectionIsLoaded(it.start, it.end)
+            } ?: false
         },
         itemProperty,
-        viewModel.startProperty,
-        viewModel.endProperty
+        viewModel.verseRangeProperty
     )
 
     lateinit var correctButton: ToggleButton
