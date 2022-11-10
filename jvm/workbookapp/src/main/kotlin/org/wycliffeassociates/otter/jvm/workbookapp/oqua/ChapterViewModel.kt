@@ -67,6 +67,10 @@ class ChapterViewModel : ViewModel() {
         loadVerseMarkers()
         loadQuestions()
         // Verse -1 to -1 is an initial case that shouldn't match any possible verse range
+        /**
+         * I initialize the verse range to -1, -1
+         *  so that it won't match with any reasonable verse range
+         */
         verseRangeProperty.set(VerseRange(-1, -1))
     }
 
