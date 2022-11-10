@@ -12,6 +12,7 @@ import org.wycliffeassociates.otter.common.domain.resourcecontainer.projectimpor
 import org.wycliffeassociates.otter.jvm.workbookapp.di.IDependencyGraphProvider
 import org.wycliffeassociates.otter.jvm.workbookapp.ui.viewmodel.WorkbookDataStore
 import tornadofx.*
+import java.time.LocalDateTime
 import javax.inject.Inject
 
 class ProjectViewModel: ViewModel() {
@@ -70,10 +71,12 @@ class ProjectViewModel: ViewModel() {
             exportProgress.set(0.0)
             exportComplete.set(false)
 
+            val time = LocalDateTime.now()
             chapters.forEach { chapter ->
                 exportRepo.exportChapter(
                     wbDataStore.workbook,
                     chapter,
+                    time,
                     directory,
                     ChapterReviewHTMLRenderer()
                 ).subscribe { exportResult ->

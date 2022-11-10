@@ -20,6 +20,7 @@ import java.io.FileNotFoundException
 import java.io.PrintWriter
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 
 
 class ChapterReviewExporterTest {
@@ -108,13 +109,17 @@ class ChapterReviewExporterTest {
         val exporter = ChapterReviewExporter(draftReviewRepo, questionsRepo)
         val directory = File("testDir")
 
-        Assert.assertEquals(directory.listFiles()?.size ?: 0, 0)
-        val result = exporter.exportChapter(workbook, chapter, dir, renderer).blockingGet()
+        Assert.assertEquals(0, directory.listFiles()?.size ?: 0)
+        val time = LocalDateTime.now()
+        val result = exporter.exportChapter(workbook, chapter, time, dir, renderer).blockingGet()
+
+        val formatter = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")
+        val timestamp = time.format(formatter)
         Assert.assertEquals(ExportResult.SUCCESS, result)
-        Assert.assertEquals(directory.listFiles()!!.size, 1)
+        Assert.assertEquals(1, directory.listFiles()!!.size)
         Assert.assertEquals(
-            directory.listFiles()!![0].name.substring(0, 25),
-            "Source-Target__Book_123__"
+            "Source-Target__Book_123__$timestamp.html",
+            directory.listFiles()!![0].name
         )
     }
 
@@ -145,14 +150,17 @@ class ChapterReviewExporterTest {
         val renderer = MockRenderer()
 
         val exporter = ChapterReviewExporter(draftReviewRepo, questionsRepo)
-        exporter.exportChapter(workbook, chapter, dir, renderer).blockingGet()
+        val time = LocalDateTime.now()
+        exporter.exportChapter(workbook, chapter, time, dir, renderer).blockingGet()
 
         val file = File("testDir").listFiles()!![0]
         val lines = file.readLines()
 
+        val formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
+        val timestamp = formatter.format(time)
         Assert.assertArrayEquals(
             arrayOf(
-                "Source -> Target",
+                "Source -> Target - $timestamp",
                 "Book 123",
                 "q1 : a1 :: 1 - 1 = UNANSWERED : words"
             ),
@@ -187,17 +195,20 @@ class ChapterReviewExporterTest {
         val renderer = MockRenderer()
 
         val exporter = ChapterReviewExporter(draftReviewRepo, questionsRepo)
-        val result = exporter.exportChapter(failedWorkbook, failedChapter, dir, renderer).blockingGet()
+        val time = LocalDateTime.now()
+        val result = exporter.exportChapter(failedWorkbook, failedChapter, time, dir, renderer).blockingGet()
 
-        val formatter = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")
-        val timestamp = LocalDateTime.now().format(formatter)
-        val file = File("testDir/Missing Source-Missing Target__Missing Book_0__${timestamp}.html")
+        var formatter = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")
+        var timestamp = time.format(formatter)
+        val file = File("testDir/Missing Source-Missing Target__Missing Book_0__$timestamp.html")
         val lines = file.readLines()
 
+        formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
+        timestamp = time.format(formatter)
         Assert.assertEquals(ExportResult.SUCCESS, result)
         Assert.assertArrayEquals(
             arrayOf(
-                "Missing Source -> Missing Target",
+                "Missing Source -> Missing Target - $timestamp",
                 "Missing Book 0",
                 "missing q1 : missing a1 :: 0 - 0 = INVALID_QUESTION : missing words"
             ),
@@ -207,8 +218,15 @@ class ChapterReviewExporterTest {
 }
 
 class MockRenderer: IChapterReviewRenderer {
-    override fun writeReviewsToFile(reviews: ChapterDraftReview, out: PrintWriter): ExportResult {
-        out.println("${reviews.source} -> ${reviews.target}")
+    override fun writeReviewsToFile(
+        reviews: ChapterDraftReview,
+        time: LocalDateTime,
+        out: PrintWriter
+    ): ExportResult {
+        val formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
+        val timestamp = formatter.format(time)
+
+        out.println("${reviews.source} -> ${reviews.target} - $timestamp")
         out.println("${reviews.book} ${reviews.chapter}")
         reviews.draftReviews.forEach { review ->
             out.println(

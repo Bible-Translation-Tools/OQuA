@@ -17,6 +17,7 @@ import org.wycliffeassociates.otter.common.device.IAudioPlayer
 import org.wycliffeassociates.otter.jvm.workbookapp.ui.viewmodel.SettingsViewModel
 import java.io.FileNotFoundException
 import tornadofx.*
+import java.time.LocalDateTime
 import javax.inject.Inject
 
 class ChapterViewModel : ViewModel() {
@@ -202,6 +203,7 @@ class ChapterViewModel : ViewModel() {
             exportRepo.exportChapter(
                 workbook,
                 chapter,
+                LocalDateTime.now(),
                 directory,
                 ChapterReviewHTMLRenderer()
             ).subscribe { exportResult ->
