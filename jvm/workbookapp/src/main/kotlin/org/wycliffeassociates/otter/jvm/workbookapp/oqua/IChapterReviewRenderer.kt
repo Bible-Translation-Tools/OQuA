@@ -7,7 +7,7 @@ import java.time.LocalDateTime
 interface IChapterReviewRenderer {
     fun writeReviewsToFile(
         reviews: ChapterDraftReview,
-        time: LocalDateTime,
+        createdTime: LocalDateTime,
         out: PrintWriter
     ): ExportResult
 }
