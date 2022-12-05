@@ -51,9 +51,12 @@ class ChapterReviewHTMLRendererTest {
         """.trimMargin()
     }
 
-    private val body = """
+    private fun body(time: LocalDateTime): String {
+        val formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
+        val timestamp = formatter.format(time)
+        return """
             |  <body>
-            |    <h1>Book chapter 123</h1>
+            |    <h1>Book chapter 123 - $timestamp</h1>
             |    <h2>Source -> Target</h2>
             |    <div class="piechart"></div>
             |    <br>
@@ -66,6 +69,7 @@ class ChapterReviewHTMLRendererTest {
             |        <th>Explanation</th>
             |      </tr>
         """.trimMargin()
+    }
 
     private val footer = """
             |    </table>
@@ -99,7 +103,7 @@ class ChapterReviewHTMLRendererTest {
 
         Assert.assertEquals("""
             |${header(time, 0, 0, 0)}
-            |$body
+            |${body(time)}
             |      <tr>
             |        <td>1</td>
             |        <td><span class="dot" style="background-color:white"></span></td>
@@ -160,7 +164,7 @@ class ChapterReviewHTMLRendererTest {
 
         Assert.assertEquals("""
             |${ header(time, 180, 90, 90) }
-            |$body
+            |${body(time)}
             |      <tr>
             |        <td>1</td>
             |        <td><span class="dot" style="background-color:green"></span></td>
