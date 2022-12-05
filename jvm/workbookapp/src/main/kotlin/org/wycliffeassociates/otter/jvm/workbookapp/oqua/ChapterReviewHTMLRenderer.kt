@@ -9,11 +9,14 @@ import java.time.format.FormatStyle
 class ChapterReviewHTMLRenderer: IChapterReviewRenderer {
     override fun writeReviewsToFile(
         reviews: ChapterDraftReview,
-        time: LocalDateTime,
+        createdTime: LocalDateTime,
         out: PrintWriter
     ): ExportResult {
-        writeHeaderHTML(reviews, time, out)
-        writeBodyHTML(reviews, out)
+        val formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
+        val timestamp = formatter.format(createdTime)
+
+        writeHeaderHTML(reviews, timestamp, out)
+        writeBodyHTML(reviews, timestamp, out)
         writeFooterHTML(out)
 
         return ExportResult.SUCCESS
@@ -21,11 +24,9 @@ class ChapterReviewHTMLRenderer: IChapterReviewRenderer {
 
     private fun writeHeaderHTML(
         reviews: ChapterDraftReview,
-        time: LocalDateTime,
+        timestamp: String,
         out: PrintWriter
     ) {
-        val formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
-        val timestamp = formatter.format(time)
         out.println("""
             |<!DOCTYPE html>
             |<html>
@@ -91,11 +92,12 @@ class ChapterReviewHTMLRenderer: IChapterReviewRenderer {
 
     private fun writeBodyHTML(
         reviews: ChapterDraftReview,
+        timestamp: String,
         out: PrintWriter
     ) {
         out.println("""
             |  <body>
-            |    <h1>${reviews.book} chapter ${reviews.chapter}</h1>
+            |    <h1>${reviews.book} chapter ${reviews.chapter} - $timestamp</h1>
             |    <h2>${reviews.source} -> ${reviews.target}</h2>
             |    <div class="piechart"></div>
             |    <br>

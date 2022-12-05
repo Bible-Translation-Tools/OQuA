@@ -110,16 +110,17 @@ class ChapterReviewExporterTest {
         val directory = File("testDir")
 
         Assert.assertEquals(0, directory.listFiles()?.size ?: 0)
-        val time = LocalDateTime.now()
-        val result = exporter.exportChapter(workbook, chapter, time, dir, renderer).blockingGet()
+        val result = exporter.exportChapter(workbook, chapter, dir, renderer).blockingGet()
 
-        val formatter = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")
-        val timestamp = time.format(formatter)
         Assert.assertEquals(ExportResult.SUCCESS, result)
         Assert.assertEquals(1, directory.listFiles()!!.size)
         Assert.assertEquals(
-            "Source-Target__Book_123__$timestamp.html",
-            directory.listFiles()!![0].name
+            "Source-Target__Book_123__",
+            directory.listFiles()!![0].name.substring(0, 25)
+        )
+        Assert.assertEquals(
+            ".html",
+            directory.listFiles()!![0].name.substring(40)
         )
     }
 
@@ -150,17 +151,16 @@ class ChapterReviewExporterTest {
         val renderer = MockRenderer()
 
         val exporter = ChapterReviewExporter(draftReviewRepo, questionsRepo)
-        val time = LocalDateTime.now()
-        exporter.exportChapter(workbook, chapter, time, dir, renderer).blockingGet()
+        exporter.exportChapter(workbook, chapter, dir, renderer).blockingGet()
 
         val file = File("testDir").listFiles()!![0]
-        val lines = file.readLines()
+        val lines = file.readLines().toMutableList()
 
-        val formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
-        val timestamp = formatter.format(time)
+        lines[0] = lines[0].substring(0, 19)
+
         Assert.assertArrayEquals(
             arrayOf(
-                "Source -> Target - $timestamp",
+                "Source -> Target - ",
                 "Book 123",
                 "q1 : a1 :: 1 - 1 = UNANSWERED : words"
             ),
@@ -195,20 +195,17 @@ class ChapterReviewExporterTest {
         val renderer = MockRenderer()
 
         val exporter = ChapterReviewExporter(draftReviewRepo, questionsRepo)
-        val time = LocalDateTime.now()
-        val result = exporter.exportChapter(failedWorkbook, failedChapter, time, dir, renderer).blockingGet()
+        val result = exporter.exportChapter(failedWorkbook, failedChapter, dir, renderer).blockingGet()
 
-        var formatter = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")
-        var timestamp = time.format(formatter)
-        val file = File("testDir/Missing Source-Missing Target__Missing Book_0__$timestamp.html")
-        val lines = file.readLines()
+        val file = File("testDir").listFiles()!![0]
+        val lines = file.readLines().toMutableList()
 
-        formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
-        timestamp = time.format(formatter)
+        lines[0] = lines[0].substring(0, 35)
+
         Assert.assertEquals(ExportResult.SUCCESS, result)
         Assert.assertArrayEquals(
             arrayOf(
-                "Missing Source -> Missing Target - $timestamp",
+                "Missing Source -> Missing Target - ",
                 "Missing Book 0",
                 "missing q1 : missing a1 :: 0 - 0 = INVALID_QUESTION : missing words"
             ),
@@ -220,11 +217,11 @@ class ChapterReviewExporterTest {
 class MockRenderer: IChapterReviewRenderer {
     override fun writeReviewsToFile(
         reviews: ChapterDraftReview,
-        time: LocalDateTime,
+        createdTime: LocalDateTime,
         out: PrintWriter
     ): ExportResult {
         val formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
-        val timestamp = formatter.format(time)
+        val timestamp = formatter.format(createdTime)
 
         out.println("${reviews.source} -> ${reviews.target} - $timestamp")
         out.println("${reviews.book} ${reviews.chapter}")

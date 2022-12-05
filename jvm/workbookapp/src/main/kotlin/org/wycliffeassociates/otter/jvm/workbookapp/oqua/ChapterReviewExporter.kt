@@ -20,11 +20,11 @@ class ChapterReviewExporter @Inject constructor (
     fun exportChapter(
         workbook: Workbook,
         chapter: Chapter,
-        time: LocalDateTime,
         directory: File,
         renderer: IChapterReviewRenderer
     ): Single<ExportResult> {
-        return getDraftReviewAndExport(workbook, chapter, time, directory, renderer)
+        val createdTime = LocalDateTime.now()
+        return getDraftReviewAndExport(workbook, chapter, createdTime, directory, renderer)
             .doOnError { error ->
                 logger.error(error.message)
             }
@@ -34,7 +34,7 @@ class ChapterReviewExporter @Inject constructor (
     private fun getDraftReviewAndExport(
         workbook: Workbook,
         chapter: Chapter,
-        time: LocalDateTime,
+        createdTime: LocalDateTime,
         directory: File,
         renderer: IChapterReviewRenderer
     ): Single<ExportResult> {
@@ -42,7 +42,7 @@ class ChapterReviewExporter @Inject constructor (
             /** If you are able to find the draft review file, export it */
             val reviews = draftReviewRepo.readDraftReviewFile(workbook, chapter)
             Single.fromCallable {
-                return@fromCallable executeExport(reviews, time, directory, renderer)
+                return@fromCallable executeExport(reviews, createdTime, directory, renderer)
             }
         } catch (_: FileNotFoundException) {
             /** If you are unable to find it, create an empty one */
@@ -50,7 +50,7 @@ class ChapterReviewExporter @Inject constructor (
             handleMissingReview(
                 workbook,
                 chapter,
-                time,
+                createdTime,
                 directory,
                 renderer
             )
@@ -60,13 +60,13 @@ class ChapterReviewExporter @Inject constructor (
     private fun handleMissingReview(
         workbook: Workbook,
         chapter: Chapter,
-        time: LocalDateTime,
+        createdTime: LocalDateTime,
         directory: File,
         renderer: IChapterReviewRenderer
     ): Single<ExportResult> {
         return getSourceChapter(workbook, chapter)
             .map { sourceChapter ->
-                writeBlankReview(workbook, sourceChapter, time, directory, renderer).blockingGet()
+                writeBlankReview(workbook, sourceChapter, createdTime, directory, renderer).blockingGet()
             }
     }
 
@@ -81,7 +81,7 @@ class ChapterReviewExporter @Inject constructor (
     private fun writeBlankReview(
         workbook: Workbook,
         sourceChapter: Chapter,
-        time: LocalDateTime,
+        createdTime: LocalDateTime,
         directory: File,
         renderer: IChapterReviewRenderer
     ): Single<ExportResult> {
@@ -97,22 +97,22 @@ class ChapterReviewExporter @Inject constructor (
                 )
             }
             .map { reviews ->
-                executeExport(reviews, time, directory, renderer)
+                executeExport(reviews, createdTime, directory, renderer)
             }
     }
 
     private fun executeExport(
         reviews: ChapterDraftReview,
-        time: LocalDateTime,
+        createdTime: LocalDateTime,
         directory: File,
         renderer: IChapterReviewRenderer
     ): ExportResult {
         var exportResult = ExportResult.FAILURE
 
-        val file = getTargetFile(reviews, time, directory)
+        val file = getTargetFile(reviews, createdTime, directory)
         logger.info("Writing ${reviews.book} ${reviews.chapter} into ${file.absolutePath}.")
         file.printWriter().use { out ->
-            exportResult = renderer.writeReviewsToFile(reviews, time, out)
+            exportResult = renderer.writeReviewsToFile(reviews, createdTime, out)
         }
 
         return exportResult
@@ -120,11 +120,11 @@ class ChapterReviewExporter @Inject constructor (
 
     private fun getTargetFile(
         reviews: ChapterDraftReview,
-        time: LocalDateTime,
+        createdTime: LocalDateTime,
         directory: File
     ): File {
         val formatter = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")
-        val timestamp = time.format(formatter)
+        val timestamp = createdTime.format(formatter)
         val name = "${reviews.source}-${reviews.target}__${reviews.book}_${reviews.chapter}__${timestamp}.html"
         return File("${directory.absolutePath}/$name")
     }
