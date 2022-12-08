@@ -2,22 +2,36 @@ package org.wycliffeassociates.otter.jvm.workbookapp.oqua
 
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.projectimportexport.ExportResult
 import java.io.PrintWriter
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 
 class ChapterReviewHTMLRenderer: IChapterReviewRenderer {
-    override fun writeReviewsToFile(reviews: ChapterDraftReview, out: PrintWriter): ExportResult {
-        writeHeaderHTML(reviews, out)
-        writeBodyHTML(reviews, out)
+    override fun writeReviewsToFile(
+        reviews: ChapterDraftReview,
+        createdTime: LocalDateTime,
+        out: PrintWriter
+    ): ExportResult {
+        val formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
+        val timestamp = formatter.format(createdTime)
+
+        writeHeaderHTML(reviews, timestamp, out)
+        writeBodyHTML(reviews, timestamp, out)
         writeFooterHTML(out)
 
         return ExportResult.SUCCESS
     }
 
-    private fun writeHeaderHTML(reviews: ChapterDraftReview, out: PrintWriter) {
+    private fun writeHeaderHTML(
+        reviews: ChapterDraftReview,
+        timestamp: String,
+        out: PrintWriter
+    ) {
         out.println("""
             |<!DOCTYPE html>
             |<html>
             |  <head>
-            |    <title>${getTitle(reviews)}</title>
+            |    <title>${getTitle(reviews)} - $timestamp</title>
             |    <style>
             |      .piechart {
             |        display: block;
@@ -76,10 +90,14 @@ class ChapterReviewHTMLRenderer: IChapterReviewRenderer {
         return 360 * amount / outOf
     }
 
-    private fun writeBodyHTML(reviews: ChapterDraftReview, out: PrintWriter) {
+    private fun writeBodyHTML(
+        reviews: ChapterDraftReview,
+        timestamp: String,
+        out: PrintWriter
+    ) {
         out.println("""
             |  <body>
-            |    <h1>${reviews.book} chapter ${reviews.chapter}</h1>
+            |    <h1>${reviews.book} chapter ${reviews.chapter} - $timestamp</h1>
             |    <h2>${reviews.source} -> ${reviews.target}</h2>
             |    <div class="piechart"></div>
             |    <br>

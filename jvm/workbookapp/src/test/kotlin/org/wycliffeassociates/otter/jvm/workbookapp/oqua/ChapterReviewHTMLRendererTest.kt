@@ -6,16 +6,22 @@ import org.junit.Assert
 import org.junit.Test
 import java.io.PrintWriter
 import java.io.StringWriter
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 
 class ChapterReviewHTMLRendererTest {
 
     private val htmlRenderer = ChapterReviewHTMLRenderer()
 
-    private fun header(correct: Int, incorrect: Int, invalid: Int) = """
+    private fun header(time: LocalDateTime, correct: Int, incorrect: Int, invalid: Int): String {
+        val formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
+        val timestamp = formatter.format(time)
+        return """
             |<!DOCTYPE html>
             |<html>
             |  <head>
-            |    <title>Source-Target : Book 123</title>
+            |    <title>Source-Target : Book 123 - $timestamp</title>
             |    <style>
             |      .piechart {
             |        display: block;
@@ -23,12 +29,12 @@ class ChapterReviewHTMLRendererTest {
             |        width: 100px;
             |        height: 100px;
             |        background-image: conic-gradient(green 0 ${
-                correct
-            }deg, red 0 ${
-                correct + incorrect
-            }deg, yellow 0 ${
-                correct + incorrect + invalid
-            }deg, grey 0 360deg);
+            correct
+        }deg, red 0 ${
+            correct + incorrect
+        }deg, yellow 0 ${
+            correct + incorrect + invalid
+        }deg, grey 0 360deg);
             |      }
             |      table, th, td {
             |        border: 1px solid black;
@@ -43,10 +49,14 @@ class ChapterReviewHTMLRendererTest {
             |    </style>
             |  </head>
         """.trimMargin()
+    }
 
-    private val body = """
+    private fun body(time: LocalDateTime): String {
+        val formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
+        val timestamp = formatter.format(time)
+        return """
             |  <body>
-            |    <h1>Book chapter 123</h1>
+            |    <h1>Book chapter 123 - $timestamp</h1>
             |    <h2>Source -> Target</h2>
             |    <div class="piechart"></div>
             |    <br>
@@ -59,6 +69,7 @@ class ChapterReviewHTMLRendererTest {
             |        <th>Explanation</th>
             |      </tr>
         """.trimMargin()
+    }
 
     private val footer = """
             |    </table>
@@ -87,11 +98,12 @@ class ChapterReviewHTMLRendererTest {
         val output = StringWriter()
         val out = PrintWriter(output)
 
-        htmlRenderer.writeReviewsToFile(reviews, out)
+        val time = LocalDateTime.now()
+        htmlRenderer.writeReviewsToFile(reviews, time, out)
 
         Assert.assertEquals("""
-            |${header(0, 0, 0)}
-            |$body
+            |${header(time, 0, 0, 0)}
+            |${body(time)}
             |      <tr>
             |        <td>1</td>
             |        <td><span class="dot" style="background-color:white"></span></td>
@@ -147,11 +159,12 @@ class ChapterReviewHTMLRendererTest {
         val output = StringWriter()
         val out = PrintWriter(output)
 
-        htmlRenderer.writeReviewsToFile(reviews, out)
+        val time = LocalDateTime.now()
+        htmlRenderer.writeReviewsToFile(reviews, time, out)
 
         Assert.assertEquals("""
-            |${ header(180, 90, 90) }
-            |$body
+            |${ header(time, 180, 90, 90) }
+            |${body(time)}
             |      <tr>
             |        <td>1</td>
             |        <td><span class="dot" style="background-color:green"></span></td>
@@ -181,6 +194,8 @@ class ChapterReviewHTMLRendererTest {
             |        <td></td>
             |      </tr>
             |$footer
-            |""".trimMargin(), output.toString())
+            |""".trimMargin(),
+            output.toString()
+        )
     }
 }

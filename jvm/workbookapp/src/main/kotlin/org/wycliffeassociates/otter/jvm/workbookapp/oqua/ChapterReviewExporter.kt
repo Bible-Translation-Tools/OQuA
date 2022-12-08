@@ -17,12 +17,15 @@ class ChapterReviewExporter @Inject constructor (
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
+    private lateinit var createdTime: LocalDateTime
+
     fun exportChapter(
         workbook: Workbook,
         chapter: Chapter,
         directory: File,
         renderer: IChapterReviewRenderer
     ): Single<ExportResult> {
+        createdTime = LocalDateTime.now()
         return getDraftReviewAndExport(workbook, chapter, directory, renderer)
             .doOnError { error ->
                 logger.error(error.message)
@@ -106,15 +109,18 @@ class ChapterReviewExporter @Inject constructor (
         val file = getTargetFile(reviews, directory)
         logger.info("Writing ${reviews.book} ${reviews.chapter} into ${file.absolutePath}.")
         file.printWriter().use { out ->
-            exportResult = renderer.writeReviewsToFile(reviews, out)
+            exportResult = renderer.writeReviewsToFile(reviews, createdTime, out)
         }
 
         return exportResult
     }
 
-    private fun getTargetFile(reviews: ChapterDraftReview, directory: File): File {
+    private fun getTargetFile(
+        reviews: ChapterDraftReview,
+        directory: File
+    ): File {
         val formatter = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")
-        val timestamp = LocalDateTime.now().format(formatter)
+        val timestamp = createdTime.format(formatter)
         val name = "${reviews.source}-${reviews.target}__${reviews.book}_${reviews.chapter}__${timestamp}.html"
         return File("${directory.absolutePath}/$name")
     }
