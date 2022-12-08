@@ -17,14 +17,16 @@ class ChapterReviewExporter @Inject constructor (
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
+    private lateinit var createdTime: LocalDateTime
+
     fun exportChapter(
         workbook: Workbook,
         chapter: Chapter,
         directory: File,
         renderer: IChapterReviewRenderer
     ): Single<ExportResult> {
-        val createdTime = LocalDateTime.now()
-        return getDraftReviewAndExport(workbook, chapter, createdTime, directory, renderer)
+        createdTime = LocalDateTime.now()
+        return getDraftReviewAndExport(workbook, chapter, directory, renderer)
             .doOnError { error ->
                 logger.error(error.message)
             }
@@ -34,7 +36,6 @@ class ChapterReviewExporter @Inject constructor (
     private fun getDraftReviewAndExport(
         workbook: Workbook,
         chapter: Chapter,
-        createdTime: LocalDateTime,
         directory: File,
         renderer: IChapterReviewRenderer
     ): Single<ExportResult> {
@@ -42,7 +43,7 @@ class ChapterReviewExporter @Inject constructor (
             /** If you are able to find the draft review file, export it */
             val reviews = draftReviewRepo.readDraftReviewFile(workbook, chapter)
             Single.fromCallable {
-                return@fromCallable executeExport(reviews, createdTime, directory, renderer)
+                return@fromCallable executeExport(reviews, directory, renderer)
             }
         } catch (_: FileNotFoundException) {
             /** If you are unable to find it, create an empty one */
@@ -50,7 +51,6 @@ class ChapterReviewExporter @Inject constructor (
             handleMissingReview(
                 workbook,
                 chapter,
-                createdTime,
                 directory,
                 renderer
             )
@@ -60,13 +60,12 @@ class ChapterReviewExporter @Inject constructor (
     private fun handleMissingReview(
         workbook: Workbook,
         chapter: Chapter,
-        createdTime: LocalDateTime,
         directory: File,
         renderer: IChapterReviewRenderer
     ): Single<ExportResult> {
         return getSourceChapter(workbook, chapter)
             .map { sourceChapter ->
-                writeBlankReview(workbook, sourceChapter, createdTime, directory, renderer).blockingGet()
+                writeBlankReview(workbook, sourceChapter, directory, renderer).blockingGet()
             }
     }
 
@@ -81,7 +80,6 @@ class ChapterReviewExporter @Inject constructor (
     private fun writeBlankReview(
         workbook: Workbook,
         sourceChapter: Chapter,
-        createdTime: LocalDateTime,
         directory: File,
         renderer: IChapterReviewRenderer
     ): Single<ExportResult> {
@@ -97,19 +95,18 @@ class ChapterReviewExporter @Inject constructor (
                 )
             }
             .map { reviews ->
-                executeExport(reviews, createdTime, directory, renderer)
+                executeExport(reviews, directory, renderer)
             }
     }
 
     private fun executeExport(
         reviews: ChapterDraftReview,
-        createdTime: LocalDateTime,
         directory: File,
         renderer: IChapterReviewRenderer
     ): ExportResult {
         var exportResult = ExportResult.FAILURE
 
-        val file = getTargetFile(reviews, createdTime, directory)
+        val file = getTargetFile(reviews, directory)
         logger.info("Writing ${reviews.book} ${reviews.chapter} into ${file.absolutePath}.")
         file.printWriter().use { out ->
             exportResult = renderer.writeReviewsToFile(reviews, createdTime, out)
@@ -120,7 +117,6 @@ class ChapterReviewExporter @Inject constructor (
 
     private fun getTargetFile(
         reviews: ChapterDraftReview,
-        createdTime: LocalDateTime,
         directory: File
     ): File {
         val formatter = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")
