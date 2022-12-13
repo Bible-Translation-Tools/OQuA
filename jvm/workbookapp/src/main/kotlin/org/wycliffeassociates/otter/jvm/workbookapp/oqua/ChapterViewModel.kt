@@ -3,6 +3,7 @@ package org.wycliffeassociates.otter.jvm.workbookapp.oqua
 import org.slf4j.LoggerFactory
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.rxkotlin.addTo
+import javafx.application.Platform
 import javafx.beans.property.SimpleBooleanProperty
 import javafx.beans.property.SimpleObjectProperty
 import org.wycliffeassociates.otter.common.data.workbook.Chapter
@@ -13,6 +14,7 @@ import org.wycliffeassociates.otter.jvm.workbookapp.ui.viewmodel.WorkbookDataSto
 import org.wycliffeassociates.otter.common.audio.AudioCue
 import org.wycliffeassociates.otter.common.audio.AudioFile
 import org.wycliffeassociates.otter.common.data.workbook.Take
+import org.wycliffeassociates.otter.common.device.AudioPlayerEvent
 import org.wycliffeassociates.otter.common.device.IAudioPlayer
 import org.wycliffeassociates.otter.jvm.workbookapp.ui.viewmodel.SettingsViewModel
 import java.io.FileNotFoundException
@@ -43,6 +45,8 @@ class ChapterViewModel : ViewModel() {
 
     val questions = observableListOf<Question>()
     val audioPlayerProperty = SimpleObjectProperty<IAudioPlayer>()
+
+    val isPlayingProperty = SimpleBooleanProperty()
     val verseRangeProperty = SimpleObjectProperty<VerseRange>()
 
     val exportComplete = SimpleBooleanProperty(false)
@@ -95,6 +99,22 @@ class ChapterViewModel : ViewModel() {
         audioPlayer.load(take.file)
         audioPlayerProperty.set(audioPlayer)
         totalFrames = audioPlayerProperty.value.getDurationInFrames()
+
+        audioPlayerProperty.value.addEventListener {
+            if (
+                it == AudioPlayerEvent.PAUSE ||
+                it == AudioPlayerEvent.STOP ||
+                it == AudioPlayerEvent.COMPLETE
+            ) {
+                Platform.runLater {
+                    isPlayingProperty.set(false)
+                }
+            } else if (it == AudioPlayerEvent.PLAY) {
+                Platform.runLater {
+                    isPlayingProperty.set(true)
+                }
+            }
+        }
     }
 
     private fun loadVerseMarkers() {

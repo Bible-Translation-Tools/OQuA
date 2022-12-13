@@ -27,6 +27,20 @@ class TQListCellFragment: ListCellFragment<Question>() {
         },
         itemProperty
     )
+    private val playPauseProperty = Bindings.createStringBinding(
+        {
+            itemProperty.value?.let {
+                if (viewModel.sectionIsLoaded(it.start, it.end) && viewModel.isPlayingProperty.value) {
+                    "Pause"
+                } else {
+                    null
+                }
+            } ?: "Play"
+        },
+        itemProperty,
+        viewModel.verseRangeProperty,
+        viewModel.isPlayingProperty
+    )
     private val restartProperty = Bindings.createBooleanBinding(
         {
             itemProperty.value?.let {
@@ -37,9 +51,9 @@ class TQListCellFragment: ListCellFragment<Question>() {
         viewModel.verseRangeProperty
     )
 
-    lateinit var correctButton: ToggleButton
-    lateinit var incorrectButton: ToggleButton
-    lateinit var invalidButton: ToggleButton
+    private lateinit var correctButton: ToggleButton
+    private lateinit var incorrectButton: ToggleButton
+    private lateinit var invalidButton: ToggleButton
 
     private fun getVerseLabel(question: Question): String {
         return if (question.start == question.end) {
@@ -58,7 +72,7 @@ class TQListCellFragment: ListCellFragment<Question>() {
                 visibleWhen(viewModel.hasAllMarkers)
                 managedWhen(visibleProperty())
 
-                button("Play/Pause") {
+                button(playPauseProperty) {
                     action {
                         itemProperty.value?.let {
                             viewModel.playVerseRange(it.start, it.end)
