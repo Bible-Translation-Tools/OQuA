@@ -27,10 +27,33 @@ class TQListCellFragment: ListCellFragment<Question>() {
         },
         itemProperty
     )
+    private val playPauseProperty = Bindings.createStringBinding(
+        {
+            itemProperty.value?.let {
+                if (viewModel.sectionIsLoaded(it.start, it.end) && viewModel.isPlayingProperty.value) {
+                    "Pause"
+                } else {
+                    null
+                }
+            } ?: "Play"
+        },
+        itemProperty,
+        viewModel.verseRangeProperty,
+        viewModel.isPlayingProperty
+    )
+    private val restartProperty = Bindings.createBooleanBinding(
+        {
+            itemProperty.value?.let {
+                viewModel.sectionIsLoaded(it.start, it.end)
+            } ?: false
+        },
+        itemProperty,
+        viewModel.verseRangeProperty
+    )
 
-    lateinit var correctButton: ToggleButton
-    lateinit var incorrectButton: ToggleButton
-    lateinit var invalidButton: ToggleButton
+    private lateinit var correctButton: ToggleButton
+    private lateinit var incorrectButton: ToggleButton
+    private lateinit var invalidButton: ToggleButton
 
     private fun getVerseLabel(question: Question): String {
         return if (question.start == question.end) {
@@ -43,10 +66,27 @@ class TQListCellFragment: ListCellFragment<Question>() {
     override val root = vbox(5) {
         addClass("oqua-tq-card")
 
-        button(verseProperty) {
-            action {
-                itemProperty.value?.let {
-                    viewModel.playVerseRange(it.start, it.end)
+        hbox(5) {
+            text(verseProperty)
+            hbox(5) {
+                visibleWhen(viewModel.hasAllMarkers)
+                managedWhen(visibleProperty())
+
+                button(playPauseProperty) {
+                    action {
+                        itemProperty.value?.let {
+                            viewModel.playVerseRange(it.start, it.end)
+                        }
+                    }
+                }
+                button("Restart") {
+                    action {
+                        itemProperty.value?.let {
+                            viewModel.playVerseRangeFromBeginning(it.start, it.end)
+                        }
+                    }
+                    visibleWhen(restartProperty)
+                    managedWhen(visibleProperty())
                 }
             }
         }
@@ -61,16 +101,19 @@ class TQListCellFragment: ListCellFragment<Question>() {
 
         hbox(5) {
             correctButton = togglebutton("Approved", toggleGroup) {
+                addClass("oqua-btn-approved")
                 action {
                     item.result.result = ResultValue.APPROVED
                 }
             }
             incorrectButton = togglebutton("Needs work", toggleGroup) {
+                addClass("oqua-btn-needs-work")
                 action {
                     item.result.result = ResultValue.NEEDS_WORK
                 }
             }
             invalidButton = togglebutton("Invalid Question", toggleGroup) {
+                addClass("oqua-btn-invalid")
                 action {
                     item.result.result = ResultValue.INVALID_QUESTION
                 }

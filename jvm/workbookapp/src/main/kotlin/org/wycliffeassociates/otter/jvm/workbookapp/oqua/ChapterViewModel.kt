@@ -3,6 +3,7 @@ package org.wycliffeassociates.otter.jvm.workbookapp.oqua
 import org.slf4j.LoggerFactory
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.rxkotlin.addTo
+import javafx.application.Platform
 import javafx.beans.property.SimpleBooleanProperty
 import javafx.beans.property.SimpleObjectProperty
 import org.wycliffeassociates.otter.common.data.workbook.Chapter
@@ -13,18 +14,24 @@ import org.wycliffeassociates.otter.jvm.workbookapp.ui.viewmodel.WorkbookDataSto
 import org.wycliffeassociates.otter.common.audio.AudioCue
 import org.wycliffeassociates.otter.common.audio.AudioFile
 import org.wycliffeassociates.otter.common.data.workbook.Take
+import org.wycliffeassociates.otter.common.device.AudioPlayerEvent
 import org.wycliffeassociates.otter.common.device.IAudioPlayer
 import org.wycliffeassociates.otter.jvm.workbookapp.ui.viewmodel.SettingsViewModel
 import java.io.FileNotFoundException
 import tornadofx.*
 import javax.inject.Inject
 
+class VerseRange (val start: Int, val end: Int)
+
 class ChapterViewModel : ViewModel() {
     private val wbDataStore: WorkbookDataStore by inject()
 
-    @Inject lateinit var draftReviewRepo: DraftReviewRepository
-    @Inject lateinit var exportRepo: ChapterReviewExporter
-    @Inject lateinit var questionsRepo: QuestionsRepository
+    @Inject
+    lateinit var draftReviewRepo: DraftReviewRepository
+    @Inject
+    lateinit var exportRepo: ChapterReviewExporter
+    @Inject
+    lateinit var questionsRepo: QuestionsRepository
 
     val settingsViewModel: SettingsViewModel by inject()
 
@@ -38,6 +45,9 @@ class ChapterViewModel : ViewModel() {
 
     val questions = observableListOf<Question>()
     val audioPlayerProperty = SimpleObjectProperty<IAudioPlayer>()
+
+    val isPlayingProperty = SimpleBooleanProperty()
+    val verseRangeProperty = SimpleObjectProperty<VerseRange>()
 
     val exportComplete = SimpleBooleanProperty(false)
 
@@ -60,6 +70,12 @@ class ChapterViewModel : ViewModel() {
         loadAudio()
         loadVerseMarkers()
         loadQuestions()
+        // Verse -1 to -1 is an initial case that shouldn't match any possible verse range
+        /**
+         * I initialize the verse range to -1, -1
+         *  so that it won't match with any reasonable verse range
+         */
+        verseRangeProperty.set(VerseRange(-1, -1))
     }
 
     fun undock() {
@@ -83,6 +99,22 @@ class ChapterViewModel : ViewModel() {
         audioPlayer.load(take.file)
         audioPlayerProperty.set(audioPlayer)
         totalFrames = audioPlayerProperty.value.getDurationInFrames()
+
+        audioPlayerProperty.value.addEventListener {
+            if (
+                it == AudioPlayerEvent.PAUSE ||
+                it == AudioPlayerEvent.STOP ||
+                it == AudioPlayerEvent.COMPLETE
+            ) {
+                Platform.runLater {
+                    isPlayingProperty.set(false)
+                }
+            } else if (it == AudioPlayerEvent.PLAY) {
+                Platform.runLater {
+                    isPlayingProperty.set(true)
+                }
+            }
+        }
     }
 
     private fun loadVerseMarkers() {
@@ -152,20 +184,28 @@ class ChapterViewModel : ViewModel() {
         draftReviewRepo.writeDraftReviewFile(workbook, chapter, questions)
     }
 
+    fun playVerseRangeFromBeginning(start: Int, end: Int) {
+        if (hasAllMarkers.value) {
+            verseRangeProperty.set(VerseRange(start, end))
+
+            val startFrame = getVerseFrame(start)
+            val endFrame = getVerseEndFrame(end)
+
+            audioPlayerProperty.value.loadSection(take.file, startFrame, endFrame)
+            audioPlayerProperty.value.seek(0)
+            audioPlayerProperty.value.play()
+        }
+    }
+
     fun playVerseRange(start: Int, end: Int) {
         if (hasAllMarkers.value) {
             if ((start in 1..totalVerses) &&
                 (end in start..totalVerses)
             ) {
-                val startFrame = getVerseFrame(start)
-                val endFrame = getVerseEndFrame(end)
-
-                if (sectionIsPlaying(startFrame, endFrame)) {
-                    audioPlayerProperty.value.pause()
+                if (sectionIsLoaded(start, end)) {
+                    audioPlayerProperty.value.toggle()
                 } else {
-                    audioPlayerProperty.value.loadSection(take.file, startFrame, endFrame)
-                    audioPlayerProperty.value.seek(0)
-                    audioPlayerProperty.value.play()
+                    playVerseRangeFromBeginning(start, end)
                 }
             } else {
                 throw IndexOutOfBoundsException(
@@ -180,18 +220,19 @@ class ChapterViewModel : ViewModel() {
     }
 
     private fun getVerseEndFrame(verse: Int): Int {
-        return if (verse == totalVerses) {
-            totalFrames
-        } else {
-            getVerseFrame(verse + 1)
+        val frame = getVerseFrame(verse)
+        for (i in (verse + 1) .. totalVerses) {
+            val newFrame = getVerseFrame(i)
+            if (newFrame > frame) {
+                return newFrame
+            }
         }
+        return totalFrames
     }
 
-    private fun sectionIsPlaying(startFrame: Int, endFrame: Int): Boolean = (
-        (audioPlayerProperty.value.frameStart == startFrame) &&
-        (audioPlayerProperty.value.frameEnd == endFrame) &&
-        (audioPlayerProperty.value.isPlaying())
-    )
+    fun sectionIsLoaded(start: Int, end: Int): Boolean = verseRangeProperty.value?.let { verseRange ->
+        (verseRange.start == start) && (verseRange.end == end)
+    } ?: false
 
     fun exportChapter() {
         val directory = chooseDirectory(FX.messages["exportChapter"])
