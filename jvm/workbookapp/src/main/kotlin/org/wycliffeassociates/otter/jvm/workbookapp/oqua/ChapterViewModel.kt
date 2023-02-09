@@ -6,6 +6,7 @@ import io.reactivex.rxkotlin.addTo
 import javafx.application.Platform
 import javafx.beans.property.SimpleBooleanProperty
 import javafx.beans.property.SimpleObjectProperty
+import javafx.beans.property.SimpleStringProperty
 import org.wycliffeassociates.otter.common.data.workbook.Chapter
 import org.wycliffeassociates.otter.common.data.workbook.Workbook
 import org.wycliffeassociates.otter.common.domain.resourcecontainer.projectimportexport.ExportResult
@@ -43,6 +44,8 @@ class ChapterViewModel : ViewModel() {
     private lateinit var verseMarkers: List<AudioCue>
     val hasAllMarkers = SimpleBooleanProperty()
 
+    val sourceTextProperty = SimpleStringProperty()
+
     val questions = observableListOf<Question>()
     val audioPlayerProperty = SimpleObjectProperty<IAudioPlayer>()
 
@@ -66,6 +69,7 @@ class ChapterViewModel : ViewModel() {
 
         exportComplete.set(false)
 
+        loadSourceText()
         loadChapterTake()
         loadAudio()
         loadVerseMarkers()
@@ -82,6 +86,14 @@ class ChapterViewModel : ViewModel() {
         closeAudio()
         saveDraftReview()
         disposables.clear()
+    }
+
+    private fun loadSourceText() {
+        wbDataStore
+            .getSourceText()
+            .subscribe { sourceText ->
+                sourceTextProperty.set(sourceText)
+            }
     }
 
     private fun loadChapterTake() {
@@ -173,6 +185,15 @@ class ChapterViewModel : ViewModel() {
                 question.result = this.result
             }
         }
+    }
+
+    fun getSourceText(start: Int, end: Int): String {
+        return sourceTextProperty
+            .value
+            ?.split("\n")
+            ?.subList(start - 1, end)
+            ?.joinToString("\n")
+            ?: ""
     }
 
     private fun closeAudio() {

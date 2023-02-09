@@ -19,6 +19,15 @@ class TQListCellFragment: ListCellFragment<Question>() {
         { itemProperty.value?.answer },
         itemProperty
     )
+    private val sourceTextProperty = Bindings.createStringBinding(
+        {
+            itemProperty.value?.let { question ->
+                viewModel.getSourceText(question.start, question.end)
+            } ?: "Source text not loaded"
+        },
+        itemProperty,
+        viewModel.sourceTextProperty
+    )
     private val verseProperty = Bindings.createStringBinding(
         {
             itemProperty.value?.let { question ->
@@ -63,80 +72,89 @@ class TQListCellFragment: ListCellFragment<Question>() {
         }
     }
 
-    override val root = vbox(5) {
+    override val root = borderpane {
         addClass("oqua-tq-card")
-
-        hbox(5) {
-            text(verseProperty)
+        right = label(sourceTextProperty) {
+            fitToParentWidth()
+            addClass("oqua-source-text")
+            isWrapText = true
+        }
+        center = vbox(5) {
+            fitToParentWidth()
             hbox(5) {
-                visibleWhen(viewModel.hasAllMarkers)
-                managedWhen(visibleProperty())
-
-                button(playPauseProperty) {
-                    action {
-                        itemProperty.value?.let {
-                            viewModel.playVerseRange(it.start, it.end)
-                        }
-                    }
-                }
-                button("Restart") {
-                    action {
-                        itemProperty.value?.let {
-                            viewModel.playVerseRangeFromBeginning(it.start, it.end)
-                        }
-                    }
-                    visibleWhen(restartProperty)
+                text(verseProperty)
+                hbox(5) {
+                    addClass("oqua-question-box")
+                    visibleWhen(viewModel.hasAllMarkers)
                     managedWhen(visibleProperty())
-                }
-            }
-        }
 
-        label(questionProperty) {
-            addClass("oqua-question-text")
-            isWrapText = true
-        }
-        label(answerProperty) {
-            isWrapText = true
-        }
-
-        hbox(5) {
-            correctButton = togglebutton("Approved", toggleGroup) {
-                addClass("oqua-btn-approved")
-                action {
-                    item.result.result = ResultValue.APPROVED
-                }
-            }
-            incorrectButton = togglebutton("Needs work", toggleGroup) {
-                addClass("oqua-btn-needs-work")
-                action {
-                    item.result.result = ResultValue.NEEDS_WORK
-                }
-            }
-            invalidButton = togglebutton("Invalid Question", toggleGroup) {
-                addClass("oqua-btn-invalid")
-                action {
-                    item.result.result = ResultValue.INVALID_QUESTION
+                    button(playPauseProperty) {
+                        action {
+                            itemProperty.value?.let {
+                                viewModel.playVerseRange(it.start, it.end)
+                            }
+                        }
+                    }
+                    button("Restart") {
+                        action {
+                            itemProperty.value?.let {
+                                viewModel.playVerseRangeFromBeginning(it.start, it.end)
+                            }
+                        }
+                        visibleWhen(restartProperty)
+                        managedWhen(visibleProperty())
+                    }
                 }
             }
 
-            itemProperty.onChange {
-                when (it?.result?.result) {
-                    ResultValue.APPROVED -> toggleGroup.selectToggle(correctButton)
-                    ResultValue.NEEDS_WORK -> toggleGroup.selectToggle(incorrectButton)
-                    ResultValue.INVALID_QUESTION -> toggleGroup.selectToggle(invalidButton)
-                    ResultValue.UNANSWERED -> toggleGroup.selectToggle(null)
+            label(questionProperty) {
+                addClass("oqua-question-text")
+                isWrapText = true
+            }
+            label(answerProperty) {
+                addClass("oqua-answer-text")
+                isWrapText = true
+            }
+
+            hbox(5) {
+                correctButton = togglebutton("Approved", toggleGroup) {
+                    addClass("oqua-btn-approved")
+                    action {
+                        item.result.result = ResultValue.APPROVED
+                    }
+                }
+                incorrectButton = togglebutton("Needs work", toggleGroup) {
+                    addClass("oqua-btn-needs-work")
+                    action {
+                        item.result.result = ResultValue.NEEDS_WORK
+                    }
+                }
+                invalidButton = togglebutton("Invalid Question", toggleGroup) {
+                    addClass("oqua-btn-invalid")
+                    action {
+                        item.result.result = ResultValue.INVALID_QUESTION
+                    }
+                }
+
+                itemProperty.onChange {
+                    when (it?.result?.result) {
+                        ResultValue.APPROVED -> toggleGroup.selectToggle(correctButton)
+                        ResultValue.NEEDS_WORK -> toggleGroup.selectToggle(incorrectButton)
+                        ResultValue.INVALID_QUESTION -> toggleGroup.selectToggle(invalidButton)
+                        ResultValue.UNANSWERED -> toggleGroup.selectToggle(null)
+                    }
                 }
             }
-        }
 
-        textfield {
-            hgrow = Priority.ALWAYS
+            textfield {
+                hgrow = Priority.ALWAYS
 
-            itemProperty.onChange {
-                text = it?.result?.explanation
-            }
-            textProperty().onChange {
-                item?.result?.explanation = it ?: ""
+                itemProperty.onChange {
+                    text = it?.result?.explanation
+                }
+                textProperty().onChange {
+                    item?.result?.explanation = it ?: ""
+                }
             }
         }
     }

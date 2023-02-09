@@ -56,6 +56,11 @@
 .oqua-missing-tq-header {
     -fx-font-weight: bold
 }
+.oqua-question-box {
+}
+.oqua-source-text {
+    -fx-pref-width: 300px;
+}
 .oqua-question-text {
     -fx-font-weight: bold
 }

@@ -37,6 +37,7 @@ class LoadingView : View() {
         tryImportStylesheet(resources["/css/common.css"])
         tryImportStylesheet(resources["/css/splash-screen.css"])
 
+        finish()
         viewModel
             .initApp()
             .subscribe(
